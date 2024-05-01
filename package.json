@@ -1,0 +1,17 @@
+{
+  "name": "dice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^20.12.7",
+    "@types/tmi.js": "^1.8.6",
+    "tmi.js": "^1.8.5",
+    "typescript": "^5.4.5"
+  }
+}
