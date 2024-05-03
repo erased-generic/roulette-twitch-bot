@@ -41,6 +41,11 @@ class UserData<T> {
     return saved;
   }
 
+  // Function to get all of the data
+  getAll(): { [key: string]: T } {
+    return this.userData;
+  }
+
   // Function to save user data to file
   saveUserData() {
     fs.writeFileSync(this.filePath, JSON.stringify(this.userData), 'utf8');

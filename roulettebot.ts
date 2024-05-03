@@ -5,7 +5,9 @@ import * as userDataModule from './userdata';
 import { Bot, ChatContext } from './interfaces';
 
 interface PerUserData {
-  balance: number
+  username?: string;
+  balance: number;
+  lastClaim?: number;
 }
 
 interface BetCommand {
@@ -20,17 +22,18 @@ class RouletteBot implements Bot {
     "unbet": this.unbetHandler.bind(this),
     "roulette": this.rouletteHandler.bind(this),
     "points": this.pointsHandler.bind(this),
+    "claim": this.claimHandler.bind(this),
+    "leaderboard": this.leaderboardHandler.bind(this),
   };
   readonly roulette = new rouletteModule.Roulette();
-  readonly usernames: { [key: string]: string | undefined } = {};
-  readonly userData = new userDataModule.UserData<PerUserData>({ balance: 100 }, "data/table.json");
+  readonly userData = new userDataModule.UserData<PerUserData>({ username: undefined, balance: 100, lastClaim: undefined }, "data/table.json");
 
   static parseBetCommand(tokens: string[]): BetCommand | string {
     let betNumbers: number[] = [], amount: number;
 
     amount = parseInt(tokens[1]);
-    if (isNaN(amount)) {
-      return "amount must be a number";
+    if (isNaN(amount) && tokens[1] !== "all") {
+      return "amount must be a number or 'all'";
     }
 
     if (tokens.length < 3) {
@@ -188,7 +191,12 @@ class RouletteBot implements Bot {
     return { betNumbers, betName, amount };
   }
 
+  updateUsername(context: ChatContext) {
+    this.userData.update(context['user-id'], (inPlaceValue, hadKey) => { inPlaceValue.username = context.username; });
+  }
+
   betHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
     // Place a bet
     const userId = context['user-id'];
 
@@ -197,18 +205,20 @@ class RouletteBot implements Bot {
       return `Parse error: ${betCommand}, try !bet <what> <where>, ${context['username']}!`;
     }
     console.log(`${userId}, ${betCommand.amount}, ${betCommand.betNumbers}`)
-    this.usernames[userId] = context['username']
+    const balance = this.userData.get(userId).balance;
+    const amount = isNaN(betCommand.amount) ? balance : betCommand.amount;
     if (betCommand.amount <= 0) {
       return `You can bet only a positive amount of points, ${context['username']}!`;
     }
-    if (betCommand.amount > this.userData.get(userId).balance) {
+    if (amount > balance) {
       return `You don't have that many points, ${context['username']}!`;
     }
-    this.roulette.placeBet(userId, betCommand.amount, betCommand.betNumbers);
-    return `${context.username} placed a bet of ${betCommand.amount} on ${betCommand.betName}!`;
+    this.roulette.placeBet(userId, amount, betCommand.betNumbers);
+    return `${context.username} placed a bet of ${amount} on ${betCommand.betName}!`;
   }
 
   unbetHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
     // Remove a bet
     const userId = context['user-id'];
 
@@ -217,23 +227,27 @@ class RouletteBot implements Bot {
   }
 
   rouletteHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
     // Run the roulette
     let msg = `Ball landed on: ${this.roulette.runRoulette()}`;
     this.roulette.computeWinnings((playerId: string, didWin: boolean, chance: number, payout: number, amount: number) => {
       msg += ", "
+      let username: string | undefined;
+      let balance: number = 0;
       if (didWin) {
         const won = payout * amount;
-        msg += `${this.usernames[playerId]} won ${won} points with a chance of ${Math.floor(chance * 100)}%`;
-        this.userData.update(playerId, (inPlaceValue, hadKey) => { inPlaceValue.balance += won; });
+        this.userData.update(playerId, (inPlaceValue, hadKey) => { balance = inPlaceValue.balance += won; username = inPlaceValue.username; });
+        msg += `${username} won ${won} points with a chance of ${Math.floor(chance * 100)}% and now has ${balance} points`;
       } else {
-        msg += `${this.usernames[playerId]} lost ${amount} points with a chance of ${Math.floor((1 - chance) * 100)}%`;
-        this.userData.update(playerId, (inPlaceValue, hadKey) => { inPlaceValue.balance -= amount; });
+        this.userData.update(playerId, (inPlaceValue, hadKey) => { balance = inPlaceValue.balance -= amount; username = inPlaceValue.username; });
+        msg += `${username} lost ${amount} points with a chance of ${Math.floor((1 - chance) * 100)}% and now has ${balance} points`;
       }
     });
     return msg;
   }
 
   pointsHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
     // Print the user's points
     const userId = context['user-id'];
 
@@ -243,5 +257,49 @@ class RouletteBot implements Bot {
       msg += ` (currently betted ${bet} of those)`
     }
     return msg + `, ${context['username']}!`;
+  }
+
+  claimHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    // Claim 100 points per 30 minutes
+    const claimSize = 100;
+    const minute = 1000 * 60;
+    const hour = minute * 60;
+    const day = hour * 24;
+    const claimCooldown = 30 * minute;
+
+    const userId = context['user-id'];
+
+    const lastClaim = this.userData.get(userId).lastClaim;
+    const now = Date.now();
+    if (lastClaim !== undefined) {
+      const elapsed = now - lastClaim;
+      if (elapsed < claimCooldown) {
+        let msg = `You are on cooldown, ${context['username']}! Please wait for `;
+        const eta = claimCooldown - elapsed;
+        if (eta < minute * 1.5) {
+          msg += `a minute`;
+        } else if (eta < hour) {
+          msg += `${Math.round(eta / minute)} minutes`;
+        } else {
+          msg += `${Math.round(eta / hour)} hours`;
+        }
+        return msg;
+      }
+    }
+    let balance = 0;
+    this.userData.update(userId, (inPlaceValue, hadKey) => { inPlaceValue.lastClaim = now; balance = inPlaceValue.balance += claimSize; });
+    return `You claimed ${claimSize} points and now have ${balance} points, ${context['username']}!`;
+  }
+
+  leaderboardHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    return `Top 3 richest people in our chat: ` + Object
+      .entries(this.userData.getAll())
+      .map(([id, data]) => { return { username: data.username, balance: data.balance }; })
+      .sort((a, b) => b.balance - a.balance)
+      .slice(0, 3)
+      .map(a => `${a.username} with ${a.balance} points`)
+      .join(", ") + ".";
   }
 }
