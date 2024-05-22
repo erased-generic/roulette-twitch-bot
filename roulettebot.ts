@@ -202,6 +202,12 @@ class RouletteBot implements Bot {
       case "19to36":
         betNumbers = allNumbers.filter(x => x >= 19 && x <= 36);
         break;
+      case "all":
+        betNumbers = allNumbers.filter(x => x > 0);
+        break;
+      case "all0":
+        betNumbers = allNumbers;
+        break;
       default: {
         const parsed = parseInts(2, 1);
         if (typeof parsed === 'string') {
@@ -263,7 +269,7 @@ class RouletteBot implements Bot {
       let balance: number = 0;
       payout = Math.floor(payout);
       this.userData.update(playerId, (inPlaceValue, hadKey) => { balance = inPlaceValue.balance += payout; username = inPlaceValue.username; });
-      return message(username, didWin, payout, Math.floor(chance * 100), balance);
+      return message(username, didWin, payout, Math.round(chance * 100), balance);
     }
   }
 
@@ -401,7 +407,7 @@ class RouletteBot implements Bot {
         } else {
           msg += ", ";
         }
-        msg += `outcome ${i}: ${Math.floor(chances[i] * 100)}% of votes (${Math.floor(100 * (1 / chances[i] - 1)) / 100}x coef)`;
+        msg += `outcome ${i}: ${Math.round(chances[i] * 100)}% of votes (${Math.round(100 * (1 / chances[i] - 1)) / 100}x coef)`;
       }
     }
     if (isFirst) {
