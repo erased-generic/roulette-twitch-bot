@@ -88,21 +88,20 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   // Remove whitespace from chat message
   msg = msg.trim();
   if (msg.startsWith('!')) {
+    const cmd = msg.split(/\s+/);
     for (const key in theBot.handlers) {
-      const pattern = `!${key}`;
-      if (msg.startsWith(pattern)) {
+      if (cmd[0] === `!${key}`) {
         const userId = context['user-id'];
         if (userId === undefined) {
           client.say(target, `Sorry, I don't know who you are, ${context['username']}!`);
           return;
         }
-        const args = msg.substring(pattern.length).split(/\s+/)
         const response = theBot.handlers[key]({
           ...context,
           "user-id": userId,
           mod: (context.mod === true) ||
                (context.badges?.broadcaster !== undefined)
-        }, args);
+        }, cmd);
         if (response !== undefined) {
           client.say(target, response);
         }

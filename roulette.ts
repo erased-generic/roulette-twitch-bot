@@ -10,19 +10,19 @@ abstract class RouletteBase {
   bets: { [key: string]: Bet };
   // Last winning number
   lastNumber: number;
-  // Maximum payout for a single bet
-  payoutCap: number;
   // All betting places
   allNumbers: number[];
+  // Casino's edge
+  edge: number;
 
   static getAllNumbers(n: number): number[] {
     return Array.from({ length: n }, (_, i) => i);
   }
 
-  constructor(n: number, payoutCap: number) {
+  constructor(n: number, edge: number) {
     this.bets = {};
     this.lastNumber = NaN;
-    this.payoutCap = payoutCap;
+    this.edge = edge;
     this.allNumbers = RouletteBase.getAllNumbers(n);
   }
 
@@ -52,23 +52,26 @@ abstract class RouletteBase {
   }
 
   // Compute the chance of winning
-  abstract numberChance(playerBet: Bet): number;
+  abstract allNumberChances(): number[];
 
   // Method to compute winnings for each player based on the last winning number
-  computeWinnings(callback: (playerId: string, didWin: boolean, chance: number, payout: number, amount: number) => void) {
+  computeWinnings(callback: (playerId: string, didWin: boolean, chance: number, payout: number) => void) {
+    // For each number in allNumbers, compute the chance of winning
+    const allChances = this.allNumberChances();
     for (const playerId in this.bets) {
       const playerBet = this.bets[playerId];
-      let chance = this.numberChance(playerBet);
-      let payout = 0;
+      let chance = 0;
+      for (var i of playerBet.numbers) {
+        chance += allChances[i];
+      }
+      let payout = -playerBet.amount;
       const didWin = playerBet.numbers.includes(this.lastNumber);
       if (didWin) {
-        const invChance = 1 / chance;
-        payout = Math.floor(invChance - 1);
-        if (!isNaN(this.payoutCap)) {
-          payout = Math.min(payout, this.payoutCap);
-        }
+        payout += playerBet.amount / playerBet.numbers.length * ((1 - this.edge) / allChances[this.lastNumber]);
+      } else {
+        chance = 1 - chance;
       }
-      callback(playerId, didWin, chance, payout, playerBet.amount);
+      callback(playerId, didWin, chance, payout);
     }
     // Reset players' bets for the next round
     this.reset();
@@ -83,47 +86,32 @@ abstract class RouletteBase {
 // Roulette class
 class Roulette extends RouletteBase {
   constructor(n: number) {
-    super(n, n - 2);
+    super(n, 1 / n);
   }
 
   // Method to calculate independent winning chance
-  numberChance(playerBet: Bet): number {
-    const winningChance = playerBet.numbers.length / this.allNumbers.length;
-    if (playerBet.numbers.includes(this.lastNumber)) {
-      return winningChance;
-    }
-    return 1 - winningChance;
+  allNumberChances(): number[] {
+    return this.allNumbers.map(() => 1 / this.allNumbers.length);
   }
 }
 
 // Predictions class
 class Prediction extends RouletteBase {
   constructor(n: number) {
-    super(n, NaN);
-  }
-
-  // Method to accept bets from players
-  placeBet(playerId: string, betAmount: number, betNumbers: number[]) {
-    if (betNumbers.length !== 1) {
-      return 'You can only predict one outcome';
-    }
-    return super.placeBet(playerId, betAmount, betNumbers);
-  }
-
-  predictionChance(num: number): number {
-    let curBets = 0, allBets = 0;
-    for (const playerId in this.bets) {
-      allBets += this.bets[playerId].amount;
-      if (this.bets[playerId].numbers.includes(num)) {
-        curBets += this.bets[playerId].amount / this.bets[playerId].numbers.length;
-      }
-    }
-
-    return curBets / allBets;
+    super(n, 0);
   }
 
   // Method to calculate prediction winning chance
-  numberChance(playerBet: Bet): number {
-    return this.predictionChance(playerBet.numbers[0]);
+  allNumberChances(): number[] {
+    let sum = 0;
+    let bets = this.allNumbers.map(() => 0);
+    for (const playerId in this.bets) {
+      sum += this.bets[playerId].amount;
+      for (var i of this.bets[playerId].numbers) {
+        bets[i] += this.bets[playerId].amount / this.bets[playerId].numbers.length;
+      }
+    }
+
+    return bets.map(b => b / sum);
   }
 }
