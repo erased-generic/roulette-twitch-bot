@@ -32,7 +32,7 @@ function createTmiClient() {
   const client = new tmi.Client(opts);
 
   // Register our event handlers (defined below)
-  client.on('message', onMessageHandler);
+  client.on('chat', onChatHandler);
   client.on('connected', onConnectedHandler);
 
   return client;
@@ -80,7 +80,7 @@ client.connect()
   });
 
 // Called every time a message comes in
-function onMessageHandler(target: string, context: tmi.ChatUserstate, msg: string, self: boolean) {
+function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, self: boolean) {
   if (self) { return; } // Ignore messages from the bot
 
   console.log(`${context.username}: ${msg}`);
@@ -97,7 +97,12 @@ function onMessageHandler(target: string, context: tmi.ChatUserstate, msg: strin
           return;
         }
         const args = msg.substring(pattern.length).split(/\s+/)
-        const response = theBot.handlers[key]({ ...context, "user-id": userId }, args);
+        const response = theBot.handlers[key]({
+          ...context,
+          "user-id": userId,
+          mod: (context.mod === true) ||
+               (context.badges?.broadcaster !== undefined)
+        }, args);
         if (response !== undefined) {
           client.say(target, response);
         }

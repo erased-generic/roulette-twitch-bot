@@ -3,6 +3,7 @@ export { ChatContext, Bot }
 interface ChatContext {
   username?: string;
   "user-id": string;
+  mod: boolean;
 }
 
 interface Bot {

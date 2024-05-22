@@ -16,6 +16,11 @@ interface BetCommand {
   amount: number;
 }
 
+interface PredictCommand {
+  predictNumber: number;
+  amount: number;
+}
+
 class RouletteBot implements Bot {
   readonly handlers: { [key: string]: (context: ChatContext, args: string[]) => string | undefined } = {
     "bet": this.betHandler.bind(this),
@@ -24,9 +29,31 @@ class RouletteBot implements Bot {
     "points": this.pointsHandler.bind(this),
     "claim": this.claimHandler.bind(this),
     "leaderboard": this.leaderboardHandler.bind(this),
+    "predict": this.predictHandler.bind(this),
+    "unpredict": this.unpredictHandler.bind(this),
+    "openPrediction": this.openPredictionHandler.bind(this),
+    "predictionStatus": this.predictStatusHandler.bind(this),
+    "closePrediction": this.closePredictionHandler.bind(this),
+    "refund": this.refundHandler.bind(this),
+    "outcome": this.outcomeHandler.bind(this)
   };
-  readonly roulette = new rouletteModule.Roulette();
+  static readonly N_PLACES = 37;
+  static readonly ALL_PLACES = rouletteModule.RouletteBase.getAllNumbers(RouletteBot.N_PLACES);
+  readonly roulette = new rouletteModule.Roulette(RouletteBot.N_PLACES);
+  readonly prediction = new rouletteModule.Prediction(RouletteBot.N_PLACES);
   readonly userData = new userDataModule.UserData<PerUserData>({ username: undefined, balance: 100, lastClaim: undefined }, "data/table.json");
+  predictionOpen = false;
+
+  static parseSpaceNumber(arg: string): number | string {
+    const value = parseInt(arg);
+    if (isNaN(value)) {
+      return "invalid space";
+    }
+    if (!RouletteBot.ALL_PLACES.includes(value)) {
+      return "invalid space number";
+    }
+    return value;
+  }
 
   static parseBetCommand(tokens: string[]): BetCommand | string {
     let betNumbers: number[] = [], amount: number;
@@ -42,12 +69,9 @@ class RouletteBot implements Bot {
     const parseInts = (start: number, n: number): number[] | string => {
       const res: number[] = [];
       for (let i = 0; i < n; i++) {
-        const value = parseInt(tokens[start + i]);
-        if (isNaN(value)) {
-          return "invalid space";
-        }
-        if (!rouletteModule.Roulette.allNumbers.includes(value)) {
-          return "invalid space number";
+        const value = RouletteBot.parseSpaceNumber(tokens[start + i]);
+        if (typeof value === 'string') {
+          return value;
         }
         res.push(value);
       }
@@ -86,7 +110,7 @@ class RouletteBot implements Bot {
     let betName: string;
     const betType = tokens[2].toLowerCase();
     betName = betType;
-    const allNumbers = rouletteModule.Roulette.allNumbers;
+    const allNumbers = RouletteBot.ALL_PLACES;
     switch (betType) {
       case "red":
         betNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
@@ -195,24 +219,31 @@ class RouletteBot implements Bot {
     this.userData.update(context['user-id'], (inPlaceValue, hadKey) => { inPlaceValue.username = context.username; });
   }
 
+  ensureBalance(userId: string, amount: number): number | string {
+    const info = this.userData.get(userId);
+    if (amount <= 0) {
+      return `You can bet only a positive amount of points, ${info.username}!`;
+    }
+    amount = isNaN(amount) ? info.balance : amount;
+    if (amount > info.balance) {
+      return `You don't have that many points, ${info.username}!`;
+    }
+    return amount;
+  }
+
   betHandler(context: ChatContext, args: string[]): string | undefined {
     this.updateUsername(context);
     // Place a bet
     const userId = context['user-id'];
-
     const betCommand = RouletteBot.parseBetCommand(args);
     if (typeof betCommand === 'string') {
-      return `Parse error: ${betCommand}, try !bet <what> <where>, ${context['username']}!`;
+      return `Parse error: ${betCommand}, try !bet <points> <outcome...>, ${context['username']}!`;
     }
-    console.log(`${userId}, ${betCommand.amount}, ${betCommand.betNumbers}`)
-    const balance = this.userData.get(userId).balance;
-    const amount = isNaN(betCommand.amount) ? balance : betCommand.amount;
-    if (betCommand.amount <= 0) {
-      return `You can bet only a positive amount of points, ${context['username']}!`;
+    const amount = this.ensureBalance(userId, betCommand.amount);
+    if (typeof amount === 'string') {
+      return amount;
     }
-    if (amount > balance) {
-      return `You don't have that many points, ${context['username']}!`;
-    }
+    console.log(`* bet ${userId}, ${betCommand.amount}, ${betCommand.betNumbers}`);
     this.roulette.placeBet(userId, amount, betCommand.betNumbers);
     return `${context.username} placed a bet of ${amount} on ${betCommand.betName}!`;
   }
@@ -226,22 +257,36 @@ class RouletteBot implements Bot {
     return `${context.username} is not betting anymore!`;
   }
 
-  rouletteHandler(context: ChatContext, args: string[]): string | undefined {
-    this.updateUsername(context);
-    // Run the roulette
-    let msg = `Ball landed on: ${this.roulette.runRoulette()}`;
-    this.roulette.computeWinnings((playerId: string, didWin: boolean, chance: number, payout: number, amount: number) => {
-      msg += ", "
+  private createWinningsCallback(message: (username: string | undefined, didWin: boolean, delta: number, percent: number, balance: number) => string) {
+    return (playerId: string, didWin: boolean, chance: number, payout: number, amount: number) => {
       let username: string | undefined;
       let balance: number = 0;
       if (didWin) {
         const won = payout * amount;
         this.userData.update(playerId, (inPlaceValue, hadKey) => { balance = inPlaceValue.balance += won; username = inPlaceValue.username; });
-        msg += `${username} won ${won} points with a chance of ${Math.floor(chance * 100)}% and now has ${balance} points`;
+        return message(username, true, won, Math.floor(chance * 100), balance);
       } else {
         this.userData.update(playerId, (inPlaceValue, hadKey) => { balance = inPlaceValue.balance -= amount; username = inPlaceValue.username; });
-        msg += `${username} lost ${amount} points with a chance of ${Math.floor((1 - chance) * 100)}% and now has ${balance} points`;
+        return message(username, false, amount, Math.floor(chance * 100), balance);
       }
+    }
+  }
+
+  rouletteHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    let msg = "";
+    this.roulette.runRoulette();
+    // Run the roulette
+    msg += `Ball landed on: ${this.roulette.lastNumber}`;
+    const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, percent: number, balance: number) => {
+      if (didWin) {
+        return `${username} won ${delta} points with a chance of ${percent}% and now has ${balance} points`;
+      } else {
+        return `${username} lost ${delta} points with a chance of ${percent}% and now has ${balance} points`;
+      }
+    });
+    this.roulette.computeWinnings((playerId: string, didWin: boolean, chance: number, payout: number, amount: number) => {
+      msg += ", " + callback(playerId, didWin, chance, payout, amount);
     });
     return msg;
   }
@@ -301,5 +346,120 @@ class RouletteBot implements Bot {
       .slice(0, 3)
       .map(a => `${a.username} with ${a.balance} points`)
       .join(", ") + ".";
+  }
+
+  static parsePredictCommand(tokens: string[]): PredictCommand | string {
+    let amount = parseInt(tokens[1]);
+    if (isNaN(amount) && tokens[1] !== "all") {
+      return "amount must be a number or 'all'";
+    }
+
+    if (tokens.length < 3) {
+      return "too few arguments";
+    }
+
+    const parsed = RouletteBot.parseSpaceNumber(tokens[2]);
+    if (typeof parsed === 'string') {
+      return parsed;
+    }
+    return { predictNumber: parsed, amount };
+  }
+
+  predictHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    const userId = context['user-id'];
+    if (!this.predictionOpen) {
+      return `Predictions are closed, ${context['username']}!`;
+    }
+    const predictCommand = RouletteBot.parsePredictCommand(args);
+    if (typeof predictCommand === 'string') {
+      return `Parse error: ${predictCommand}, try !predict <points> <outcome>, ${context['username']}!`;
+    }
+    const amount = this.ensureBalance(userId, predictCommand.amount);
+    if (typeof amount === 'string') {
+      return amount;
+    }
+    console.log(`* predict ${userId}, ${predictCommand.amount}, ${predictCommand.predictNumber}`);
+    this.prediction.placeBet(userId, amount, [predictCommand.predictNumber]);
+    return `${context.username} predicted ${predictCommand.predictNumber} with ${amount} points!`;
+  }
+
+  unpredictHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    if (!this.predictionOpen) {
+      return `Predictions are closed, ${context['username']}!`;
+    }
+    const userId = context['user-id'];
+    this.prediction.unplaceBet(userId);
+    return `${context.username} is not predicting anymore!`;
+  }
+
+  predictStatusHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    return `not implemented!`;
+  }
+
+  refundHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    if (!context.mod) {
+      return `Peasant ${context['username']}, you can't select a prediction outcome!`;
+    }
+    this.predictionOpen = false;
+    this.prediction.reset();
+    return `An honorable mod has refunded the prediction!`;
+  }
+
+  openPredictionHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    if (!context.mod) {
+      return `Peasant ${context['username']}, you can't open a prediction!`;
+    }
+    this.predictionOpen = true;
+    return `An honorable mod has opened a prediction!`;
+  }
+
+  closePredictionHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    if (!context.mod) {
+      return `Peasant ${context['username']}, you can't close a prediction!`;
+    }
+    this.predictionOpen = false;
+    return `An honorable mod has closed a prediction!`;
+  }
+
+  outcomeHandler(context: ChatContext, args: string[]): string | undefined {
+    this.updateUsername(context);
+    if (!context.mod) {
+      return `Peasant ${context['username']}, you can't select a prediction outcome!`;
+    }
+
+    let msg = "";
+
+    if (this.predictionOpen) {
+      msg += "Closing the prediction. ";
+      this.predictionOpen = false;
+    }
+
+    if (args.length < 2) {
+      return msg += `Dear mod ${context['username']}, too few arguments`;
+    }
+    const number = RouletteBot.parseSpaceNumber(args[1]);
+    if (typeof number === 'string') {
+      return msg += `Dear mod ${context['username']}, I couldn't parse the outcome: ${number}!`;
+    }
+
+    this.prediction.lastNumber = number;
+    msg += `An honorable mod has selected an outcome ${number} for the prediction`;
+    const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, percent: number, balance: number) => {
+      if (didWin) {
+        return `${username} won ${delta} points with a coefficient of ${percent / 100} and now has ${balance} points`;
+      } else {
+        return `${username} lost ${delta} points with a coefficient of ${percent / 100} and now has ${balance} points`;
+      }
+    });
+    this.prediction.computeWinnings((playerId: string, didWin: boolean, chance: number, payout: number, amount: number) => {
+      msg += ", " + callback(playerId, didWin, chance, payout, amount);
+    });
+    return msg;
   }
 }
