@@ -1,5 +1,5 @@
 node_modules/
 package-lock.json
-*.js
+dist/
 data/auth.json
 data/table.json

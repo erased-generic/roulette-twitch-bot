@@ -26,7 +26,7 @@ class RouletteBot implements Bot {
     "bet": this.betHandler.bind(this),
     "unbet": this.unbetHandler.bind(this),
     "roulette": this.rouletteHandler.bind(this),
-    "points": this.pointsHandler.bind(this),
+    "balance": this.pointsHandler.bind(this),
     "claim": this.claimHandler.bind(this),
     "leaderboard": this.leaderboardHandler.bind(this),
     "predict": this.predictHandler.bind(this),
@@ -269,7 +269,7 @@ class RouletteBot implements Bot {
       let balance: number = 0;
       payout = Math.floor(payout);
       this.userData.update(playerId, (inPlaceValue, hadKey) => { balance = inPlaceValue.balance += payout; username = inPlaceValue.username; });
-      return message(username, didWin, payout, Math.round(chance * 100), balance);
+      return message(username, didWin, payout, chance, balance);
     }
   }
 
@@ -279,11 +279,12 @@ class RouletteBot implements Bot {
     this.roulette.runRoulette();
     // Run the roulette
     msg += `Ball landed on: ${this.roulette.lastNumber}`;
-    const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, percent: number, balance: number) => {
+    const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, chance: number, balance: number) => {
+      const percent = Math.round(chance * 100);
       if (didWin) {
         return `${username} won ${delta} points with a chance of ${percent}% and now has ${balance} points`;
       } else {
-        return `${username} lost ${-delta} points with a chance of ${percent}% and now has ${balance} points`;
+        return `${username} lost ${-delta} points with a chance of ${100 - percent}% and now has ${balance} points`;
       }
     });
     this.roulette.computeWinnings((playerId: string, didWin: boolean, chance: number, payout: number) => {
@@ -419,7 +420,7 @@ class RouletteBot implements Bot {
   refundHandler(context: ChatContext, args: string[]): string | undefined {
     this.updateUsername(context);
     if (!context.mod) {
-      return `Peasant ${context['username']}, you can't select a prediction outcome!`;
+      return `Peasant ${context['username']}, you can't refund a prediction!`;
     }
     this.predictionOpen = false;
     this.prediction.reset();
@@ -466,12 +467,12 @@ class RouletteBot implements Bot {
     }
 
     this.prediction.lastNumber = number;
-    msg += `An honorable mod has selected the outcome ${number} for the prediction`;
-    const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, percent: number, balance: number) => {
+    msg += `Prediction resulted in outcome '${number}'`;
+    const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, chance: number, balance: number) => {
       if (didWin) {
-        return `${username} won ${delta} points with a coefficient of ${percent / 100} and now has ${balance} points`;
+        return `${username} won ${delta} points (coef ${Math.round(100 * (1 / chance - 1)) / 100}x) and now has ${balance} points`;
       } else {
-        return `${username} lost ${-delta} points with a coefficient of ${percent / 100} and now has ${balance} points`;
+        return `${username} lost ${-delta} points (coef ${Math.round(100 * (1 / chance - 1)) / 100}x) and now has ${balance} points`;
       }
     });
     this.prediction.computeWinnings((playerId: string, didWin: boolean, chance: number, payout: number) => {

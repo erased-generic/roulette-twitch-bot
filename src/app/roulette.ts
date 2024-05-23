@@ -68,8 +68,6 @@ abstract class RouletteBase {
       const didWin = playerBet.numbers.includes(this.lastNumber);
       if (didWin) {
         payout += playerBet.amount / playerBet.numbers.length * ((1 - this.edge) / allChances[this.lastNumber]);
-      } else {
-        chance = 1 - chance;
       }
       callback(playerId, didWin, chance, payout);
     }
