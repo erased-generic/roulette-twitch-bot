@@ -16,10 +16,10 @@ function testRouletteBase(instance: RouletteBase, bets: { [key: string]: Bet }, 
   instance.computeWinnings((playerId, didWin, chance, payout) => {
     assert.strictEqual(playerId in expected, true);
     assert.strictEqual(didWin, expected[playerId].didWin);
-    if (Math.abs(chance - expected[playerId].chance) > 0.0001) {
+    if (!(Math.abs(chance - expected[playerId].chance) < 0.0001)) {
       assert.strictEqual(chance, expected[playerId].chance);
     }
-    if (Math.abs(payout - expected[playerId].payout) > 0.0001) {
+    if (!(Math.abs(payout - expected[playerId].payout) < 0.0001)) {
       assert.strictEqual(payout, expected[playerId].payout);
     }
     called[playerId] = true;
@@ -119,30 +119,30 @@ testRouletteBase(new Roulette(37), {
 testRouletteBase(new Prediction(2),
   { player1: { amount: 10, numbers: [1] } }, 1,
   { player1: { didWin: true, chance: 1, payout: 0 } });
-testRouletteBase(new Prediction(2), {
+testRouletteBase(new Prediction(3), {
   player1: { amount: 10, numbers: [1] },
   player2: { amount: 10, numbers: [2] }
 }, 1, {
   player1: { didWin: true, chance: 0.5, payout: 10 },
   player2: { didWin: false, chance: 0.5, payout: -10 }
 });
-testRouletteBase(new Prediction(2), {
+testRouletteBase(new Prediction(3), {
   player1: { amount: 10, numbers: [1] },
   player2: { amount: 100, numbers: [2] }
 }, 1, {
   player1: { didWin: true, chance: 1 / 11, payout: 100 },
-  player2: { didWin: false, chance: 1 / 11, payout: -100 }
+  player2: { didWin: false, chance: 10 / 11, payout: -100 }
 });
-testRouletteBase(new Prediction(2), {
+testRouletteBase(new Prediction(3), {
   player1: { amount: 9, numbers: [1] },
   player2: { amount: 1, numbers: [1] },
   player3: { amount: 100, numbers: [2] }
 }, 1, {
   player1: { didWin: true, chance: 1 / 11, payout: 90 },
   player2: { didWin: true, chance: 1 / 11, payout: 10 },
-  player3: { didWin: false, chance: 1 / 11, payout: -100 }
+  player3: { didWin: false, chance: 10 / 11, payout: -100 }
 });
-testRouletteBase(new Prediction(3), {
+testRouletteBase(new Prediction(4), {
   player1: { amount: 9, numbers: [1] },
   player2: { amount: 1, numbers: [1] },
   player3: { amount: 50, numbers: [2] },
@@ -153,16 +153,16 @@ testRouletteBase(new Prediction(3), {
   player3: { didWin: false, chance: 5 / 11, payout: -50 },
   player4: { didWin: false, chance: 5 / 11, payout: -50 }
 });
-testRouletteBase(new Prediction(3), {
+testRouletteBase(new Prediction(4), {
   player1: { amount: 9, numbers: [1] },
   player2: { amount: 1, numbers: [1] },
   player3: { amount: 50, numbers: [2] },
   player4: { amount: 50, numbers: [3] },
   player5: { amount: 9, numbers: [1, 2, 3] }
 }, 1, {
-  player1: { didWin: true, chance: 13 / 119, payout: 9 * (119 / 13 - 1) },      // 73.385
-  player2: { didWin: true, chance: 13 / 119, payout: 1 * (119 / 13 - 1) },      // 8.154
+  player1: { didWin: true, chance: 13 / 119, payout: 9 * (119 / 13 - 1) },  // 73.385
+  player2: { didWin: true, chance: 13 / 119, payout: 1 * (119 / 13 - 1) },  // 8.154
   player3: { didWin: false, chance: 53 / 119, payout: -50 },                // -50
   player4: { didWin: false, chance: 53 / 119, payout: -50 },                // -50
-  player5: { didWin: true, chance: 1 / 3, payout: -3 - 3 + 3 * (119 / 13 - 1) } // 18.462
+  player5: { didWin: true, chance: 1, payout: -3 - 3 + 3 * (119 / 13 - 1) } // 18.462
 });
