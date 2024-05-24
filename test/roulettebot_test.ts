@@ -1,4 +1,4 @@
-import { BetCommand, RouletteBot } from '../app/roulettebot';
+import { BetCommand, RouletteBot } from '../src/roulettebot';
 import * as assert from 'assert';
 
 function parse(command: string) {

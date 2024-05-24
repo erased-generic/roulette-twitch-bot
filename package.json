@@ -2,10 +2,10 @@
   "name": "roulette-twitch-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/app/bot.js",
+  "main": "dist/src/bot.js",
   "scripts": {
     "build": "tsc",
-    "start": "npm run build && node dist/app/bot.js",
+    "start": "npm run build && node dist/src/bot.js",
     "test": "npm run build && node dist/test/test.js"
   },
   "author": "",
