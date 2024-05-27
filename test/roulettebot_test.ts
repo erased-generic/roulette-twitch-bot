@@ -52,130 +52,118 @@ test("300 green", {
   amount: 300
 });
 
-test("100 split 1 2", {
+test("100 1 2", {
   betNumbers: [1, 2],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 2 3", {
+test("100 2 3", {
   betNumbers: [2, 3],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 3 4", undefined);
-test("100 split 4 5", {
+test("100 4 5", {
   betNumbers: [4, 5],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 26 27", {
+test("100 26 27", {
   betNumbers: [26, 27],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 35 36", {
+test("100 35 36", {
   betNumbers: [35, 36],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 36 37", undefined);
-test("100 split 0 1", undefined);
-test("100 split 1 1", undefined);
-test("100 split 1 4", {
+test("100 36 37", undefined);
+test("100 -1 2", undefined);
+test("100 2--1 3", undefined);
+test("100 1-0 3", undefined);
+test("100 1 4", {
   betNumbers: [1, 4],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 2 5", {
+test("100 2 5", {
   betNumbers: [2, 5],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 5 2", {
+test("100 5 2", {
   betNumbers: [2, 5],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 3 6", {
+test("100 3 6", {
   betNumbers: [3, 6],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
-test("100 split 33 36", {
+test("100 33 36", {
   betNumbers: [33, 36],
-  betName: "split",
+  betName: "custom bet",
   amount: 100
 });
 
-test("100 street 1 2 3", {
+test("100 1 2 3", {
   betNumbers: [1, 2, 3],
-  betName: "street",
+  betName: "custom bet",
   amount: 100
 });
-test("100 street 4 5 6", {
+test("100 4 5 6", {
   betNumbers: [4, 5, 6],
-  betName: "street",
+  betName: "custom bet",
   amount: 100
 });
-test("100 street 31 32 33", {
+test("100 31 32 33", {
   betNumbers: [31, 32, 33],
-  betName: "street",
+  betName: "custom bet",
   amount: 100
 });
-test("100 street 1 4 7", undefined);
-test("100 street 1 2 4", undefined);
-test("100 street 0 1 2", undefined);
-test("100 street 0 1 1", undefined);
 
-test("100 corner 1 2 4 5", {
+test("100 1 2 4 5", {
   betNumbers: [1, 2, 4, 5],
-  betName: "corner",
+  betName: "custom bet",
   amount: 100
 });
-test("100 corner 5 4 2 1", {
+test("100 5 4 2 1", {
   betNumbers: [1, 2, 4, 5],
-  betName: "corner",
+  betName: "custom bet",
   amount: 100
 });
-test("100 corner 17 18 20 21", {
+test("100 17 18 20 21", {
   betNumbers: [17, 18, 20, 21],
-  betName: "corner",
+  betName: "custom bet",
   amount: 100
 });
-test("100 corner 32 33 35 36", {
+test("100 32 33 35 36", {
   betNumbers: [32, 33, 35, 36],
-  betName: "corner",
+  betName: "custom bet",
   amount: 100
 });
-test("100 corner 1 2 3 4", undefined);
-test("100 corner 0 1 2 3", undefined);
-test("100 corner 31 33 35 36", undefined);
-test("100 corner 31 35 36 33", undefined);
 
-test("100 doublestreet 1 2 3 4 5 6", {
+test("100 1 2 3 4 5 6", {
   betNumbers: [1, 2, 3, 4, 5, 6],
-  betName: "doublestreet",
+  betName: "custom bet",
   amount: 100
 });
-test("100 doublestreet 4 5 6 7 8 9", {
+test("100 4 5 6 7 8 9", {
   betNumbers: [4, 5, 6, 7, 8, 9],
-  betName: "doublestreet",
+  betName: "custom bet",
   amount: 100
 });
-test("100 doublestreet 7 8 9 4 5 6", {
+test("100 7 8 9 4 5 6", {
   betNumbers: [4, 5, 6, 7, 8, 9],
-  betName: "doublestreet",
+  betName: "custom bet",
   amount: 100
 });
-test("100 doublestreet 31 32 33 34 35 36", {
+test("100 31 32 33 34 35 36", {
   betNumbers: [31, 32, 33, 34, 35, 36],
-  betName: "doublestreet",
+  betName: "custom bet",
   amount: 100
 });
-test("100 doublestreet 0 1 2 3 4 5", undefined);
-test("100 doublestreet 1 2 3 7 8 9", undefined);
-test("100 doublestreet 7 8 9 1 2 3", undefined);
-test("100 doublestreet 34 35 36 37 38 39", undefined);
 
 test("100 column1", {
   betNumbers: [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34],
@@ -246,5 +234,11 @@ test("100 all", {
 test("100 all0", {
   betNumbers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
   betName: "all0",
+  amount: 100
+});
+
+test("100 0-36", {
+  betNumbers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36],
+  betName: "custom bet",
   amount: 100
 });

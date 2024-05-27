@@ -44,15 +44,26 @@ class RouletteBot implements Bot {
   readonly userData = new userDataModule.UserData<PerUserData>({ username: undefined, balance: 100, lastClaim: undefined }, "data/table.json");
   predictionOpen = false;
 
-  static parseSpaceNumber(arg: string): number | string {
-    const value = parseInt(arg);
-    if (isNaN(value)) {
-      return "invalid space";
+  static parseSpaceRange(arg: string): number[] | string {
+    if (arg.match(/^\d+$/)) {
+      const value = parseInt(arg);
+      if (isNaN(value) || !RouletteBot.ALL_PLACES.includes(value)) {
+        return `invalid space '${arg}'`;
+      }
+      return [value];
+    } else if (arg.match(/^\d+-\d+$/)) {
+      const args = arg.split('-');
+      const start = parseInt(args[0]);
+      const end = parseInt(args[1]);
+      if (isNaN(start) || isNaN(end) ||
+          !RouletteBot.ALL_PLACES.includes(start) ||
+          !RouletteBot.ALL_PLACES.includes(end) ||
+          start > end) {
+        return `invalid space range '${arg}'`;
+      }
+      return RouletteBot.ALL_PLACES.slice(start, end + 1);
     }
-    if (!RouletteBot.ALL_PLACES.includes(value)) {
-      return "invalid space number";
-    }
-    return value;
+    return `invalid space argument '${arg}'`;
   }
 
   static parseBetCommand(tokens: string[]): BetCommand | string {
@@ -66,47 +77,18 @@ class RouletteBot implements Bot {
     if (tokens.length < 3) {
       return "too few arguments";
     }
-    const parseInts = (start: number, n: number): number[] | string => {
+    const parseSpaceRanges = (start: number): number[] | string => {
       const res: number[] = [];
-      for (let i = 0; i < n; i++) {
-        const value = RouletteBot.parseSpaceNumber(tokens[start + i]);
-        if (typeof value === 'string') {
-          return value;
+      for (let i = 0; i < tokens.length - start; i++) {
+        const values = RouletteBot.parseSpaceRange(tokens[start + i]);
+        if (typeof values === 'string') {
+          return values;
         }
-        res.push(value);
+        res.push(...values);
       }
       return res;
     };
-    const toRow = (space: number): number => {
-      return Math.floor((space - 1) / 3);
-    };
-    const toCol = (space: number): number => {
-      return (space - 1) % 3;
-    };
-    const parseListBet = (name: string, n: number, acceptsZero: boolean, pred: (parsed: number[]) => undefined | string): undefined | string => {
-      if (tokens.length < 3 + n) {
-        return `${name} bet requires ${n} spaces`;
-      }
-      const parsed = parseInts(3, n);
-      if (typeof parsed === 'string') {
-        return parsed;
-      }
-      if (!acceptsZero && parsed.includes(0)) {
-        return `${name} bet doesn't accept zero`;
-      }
-      parsed.sort();
-      const res = pred(parsed);
-      if (typeof res === 'string') {
-        return `${name} bet requires ${res}`;
-      }
-      betNumbers = parsed;
-      return undefined;
-    };
-    const parseListBetNoZero = (name: string, n: number, pred: (parsed: number[]) => undefined | string): undefined | string => {
-      return parseListBet(name, n, false, pred);
-    };
 
-    const betNumber = parseInt(tokens[2]);
     let betName: string;
     const betType = tokens[2].toLowerCase();
     betName = betType;
@@ -121,57 +103,6 @@ class RouletteBot implements Bot {
       case "green":
         betNumbers = [0];
         break;
-      case "split": {
-        const res = parseListBetNoZero(betType, 2, parsed =>
-          (toRow(parsed[1]) === toRow(parsed[0]) && parsed[1] === parsed[0] + 1 ||
-            toRow(parsed[1]) === toRow(parsed[0]) + 1 && toCol(parsed[1]) === toCol(parsed[0]))
-            ? undefined
-            : "two adjoining numbers");
-        if (res !== undefined) {
-          return res;
-        }
-        break;
-      }
-      case "street": {
-        const res = parseListBetNoZero(betType, 3, parsed =>
-          (toRow(parsed[2]) === toRow(parsed[1]) && toRow(parsed[1]) === toRow(parsed[0]) &&
-            parsed[2] === parsed[1] + 1 && parsed[1] === parsed[0] + 1)
-            ? undefined
-            : "three horizontally adjoining numbers");
-        if (res !== undefined) {
-          return res;
-        }
-        break;
-      }
-      case "corner": {
-        const res = parseListBetNoZero(betType, 4, parsed =>
-          (toRow(parsed[1]) === toRow(parsed[0]) &&
-            toRow(parsed[3]) === toRow(parsed[2]) &&
-            toRow(parsed[2]) === toRow(parsed[0]) + 1 &&
-            toCol(parsed[2]) === toCol(parsed[0]) &&
-            parsed[1] === parsed[0] + 1 &&
-            parsed[3] === parsed[2] + 1)
-            ? undefined
-            : "four adjoining numbers in a block");
-        if (res !== undefined) {
-          return res;
-        }
-        break;
-      }
-      case "doublestreet": {
-        const res = parseListBetNoZero(betType, 6, parsed =>
-          (toRow(parsed[2]) === toRow(parsed[1]) && toRow(parsed[1]) === toRow(parsed[0]) &&
-            toRow(parsed[5]) === toRow(parsed[4]) && toRow(parsed[4]) === toRow(parsed[3]) &&
-            toRow(parsed[3]) === toRow(parsed[0]) + 1 &&
-            parsed[2] === parsed[1] + 1 && parsed[1] === parsed[0] + 1 &&
-            parsed[5] === parsed[4] + 1 && parsed[4] === parsed[3] + 1)
-            ? undefined
-            : "two adjoining rows of numbers");
-        if (res !== undefined) {
-          return res;
-        }
-        break;
-      }
       case "column1":
         betNumbers = allNumbers.filter(x => x % 3 === 1);
         break;
@@ -209,12 +140,13 @@ class RouletteBot implements Bot {
         betNumbers = allNumbers;
         break;
       default: {
-        const parsed = parseInts(2, 1);
+        let parsed = parseSpaceRanges(2);
         if (typeof parsed === 'string') {
-          return `unrecognized bet: ${parsed}`;
+          return parsed;
         }
+        parsed = Array.from(new Set(parsed)).sort((a, b) => a - b);
         betNumbers = parsed;
-        betName = betNumber.toString();
+        betName = parsed.length === 1 ? parsed[0].toString() : "custom bet";
       }
     }
 
@@ -360,11 +292,14 @@ class RouletteBot implements Bot {
       return "too few arguments";
     }
 
-    const parsed = RouletteBot.parseSpaceNumber(tokens[2]);
+    const parsed = RouletteBot.parseSpaceRange(tokens[2]);
     if (typeof parsed === 'string') {
       return parsed;
     }
-    return { predictNumber: parsed, amount };
+    if (parsed.length !== 1) {
+      return "can only predict a single outcome";
+    }
+    return { predictNumber: parsed[0], amount };
   }
 
   predictHandler(context: ChatContext, args: string[]): string | undefined {
@@ -461,12 +396,15 @@ class RouletteBot implements Bot {
     if (args.length < 2) {
       return msg += `Dear mod ${context['username']}, too few arguments`;
     }
-    const number = RouletteBot.parseSpaceNumber(args[1]);
+    const number = RouletteBot.parseSpaceRange(args[1]);
     if (typeof number === 'string') {
       return msg += `Dear mod ${context['username']}, I couldn't parse the outcome: ${number}!`;
     }
+    if (number.length !== 1) {
+      return msg += `Dear mod ${context['username']}, I can only handle a single outcome`;
+    }
 
-    this.prediction.lastNumber = number;
+    this.prediction.lastNumber = number[0];
     msg += `Prediction resulted in outcome '${number}'`;
     const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, chance: number, balance: number) => {
       if (didWin) {
