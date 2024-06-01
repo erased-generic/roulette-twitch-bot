@@ -1,4 +1,4 @@
-import * as blackjack from '../src/blackjack';
+import * as blackjack from '../src/util/blackjack';
 import * as assert from 'assert';
 
 // Test general case
@@ -151,4 +151,33 @@ import * as assert from 'assert';
   ]));
   // instant blackjack
   assert.deepStrictEqual(instance.init(), { ranking: [['player1'], ['player2']] });
+}
+
+{
+  let instance = new blackjack.BlackJack(['player1', 'player2'], new blackjack.Deck([
+    new blackjack.Card(1, blackjack.CardSuit.Heart),
+    new blackjack.Card(1, blackjack.CardSuit.Spade),
+
+    new blackjack.Card(10, blackjack.CardSuit.Spade),
+    new blackjack.Card(9, blackjack.CardSuit.Heart),
+
+    new blackjack.Card(1, blackjack.CardSuit.Club),
+    new blackjack.Card(1, blackjack.CardSuit.Diamond),
+  ]));
+  assert.deepStrictEqual(instance.init(), undefined);
+  assert.strictEqual(blackjack.BlackJack.getBalance(instance.hands['player1']), 12);
+  assert.strictEqual(blackjack.BlackJack.getBalance(instance.hands['player2']), 19);
+  assert.strictEqual(instance.getCurrentPlayer(), 'player1');
+  // overflow ace -> 1
+  assert.deepStrictEqual(instance.hit(), {
+    card: new blackjack.Card(1, blackjack.CardSuit.Spade),
+    balance: 13,
+    result: undefined
+  });
+  // overflow another ace -> 1
+  assert.deepStrictEqual(instance.hit(), {
+    card: new blackjack.Card(1, blackjack.CardSuit.Heart),
+    balance: 14,
+    result: undefined
+  });
 }

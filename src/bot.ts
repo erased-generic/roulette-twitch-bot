@@ -1,7 +1,17 @@
-import * as interfaces from './interfaces'
-import * as rouletteBot from './roulettebot'
+import * as interfaces from './util/interfaces';
+import * as rouletteBot from './bot/roulettebot';
+import * as predictionBot from './bot/predictionbot';
+import * as duelBot from './bot/duelbot';
+import * as botBase from './bot/botbase';
+import * as userDataModule from './util/userdata';
 
-const theBot: interfaces.Bot = new rouletteBot.RouletteBot()
+const userData = new userDataModule.UserData<botBase.PerUserData>(botBase.onReadUserData, "data/table.json");
+const theBot: interfaces.Bot = interfaces.composeBots([
+  new botBase.UsernameUpdaterBot(userData),
+  new rouletteBot.RouletteBot(userData),
+  new predictionBot.PredictionBot(userData, 100),
+  new duelBot.DuelBot(userData),
+])
 
 import * as fs from 'fs';
 import * as tmi from 'tmi.js';
@@ -96,12 +106,14 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
           client.say(target, `Sorry, I don't know who you are, ${context['username']}!`);
           return;
         }
-        const response = theBot.handlers[key]({
+        let chatContext = {
           ...context,
           "user-id": userId,
           mod: (context.mod === true) ||
                (context.badges?.broadcaster !== undefined)
-        }, cmd);
+        };
+        theBot.onHandlerCalled(chatContext, cmd)
+        const response = theBot.handlers[key](chatContext, cmd);
         if (response !== undefined) {
           client.say(target, response);
         }

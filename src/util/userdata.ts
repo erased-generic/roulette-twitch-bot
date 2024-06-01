@@ -3,18 +3,17 @@ export { UserData };
 import * as fs from 'fs';
 
 class UserData<T> {
-  readonly userData: { [key: string]: T } = {}
-  readonly filePath: string
-  readonly defaultValue: T
+  readonly userData: { [key: string]: T } = {};
+  readonly filePath: string;
+  readonly onReadValue: (read: any) => T;
 
-  constructor(defaultValue: T, filePath: string) {
+  constructor(onReadValue: (read: any) => T, filePath: string) {
     this.filePath = filePath;
-    this.defaultValue = defaultValue;
+    this.onReadValue = onReadValue;
     if (fs.existsSync(filePath)) {
       const parsedData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       for (const key in parsedData) {
-        const data: any = parsedData[key];
-        const filledData = { ...this.defaultValue, ...data };
+        const filledData = onReadValue(parsedData[key]);
         this.userData[key] = filledData;
       }
     }
@@ -32,7 +31,7 @@ class UserData<T> {
   update(userId: string, updater: (inPlaceValue: T, hadKey: boolean) => void): T {
     let hadKey = true;
     if (!(userId in this.userData)) {
-      this.userData[userId] = { ...this.defaultValue };
+      this.userData[userId] = this.onReadValue({});
       hadKey = false;
     }
     const saved = this.userData[userId];

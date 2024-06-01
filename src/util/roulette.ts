@@ -55,13 +55,13 @@ abstract class RouletteBase {
   abstract allNumberChances(): number[];
 
   // Method to compute winnings for each player based on the last winning number
-  computeWinnings(callback: (playerId: string, didWin: boolean, chance: number, payout: number) => void) {
+  computeWinnings(callback: (playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => void) {
     // For each number in allNumbers, compute the chance of winning
     const allChances = this.allNumberChances();
     for (const playerId in this.bets) {
       const playerBet = this.bets[playerId];
       let chance = 0;
-      for (var i of playerBet.numbers) {
+      for (const i of playerBet.numbers) {
         chance += allChances[i];
       }
       let payout = -playerBet.amount;
@@ -69,7 +69,7 @@ abstract class RouletteBase {
       if (didWin) {
         payout += playerBet.amount / playerBet.numbers.length * ((1 - this.edge) / allChances[this.lastNumber]);
       }
-      callback(playerId, didWin, chance, payout);
+      callback(playerId, didWin, chance, playerBet.amount, payout);
     }
     // Reset players' bets for the next round
     this.reset();
@@ -105,8 +105,17 @@ class Prediction extends RouletteBase {
     let bets = this.allNumbers.map(() => 0);
     for (const playerId in this.bets) {
       sum += this.bets[playerId].amount;
-      for (var i of this.bets[playerId].numbers) {
+      for (const i of this.bets[playerId].numbers) {
         bets[i] += this.bets[playerId].amount / this.bets[playerId].numbers.length;
+      }
+    }
+
+    if (sum === 0) {
+      for (const playerId in this.bets) {
+        for (const i of this.bets[playerId].numbers) {
+          sum++;
+          bets[i]++;
+        }
       }
     }
 

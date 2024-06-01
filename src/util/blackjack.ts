@@ -56,12 +56,12 @@ class Card {
 class Deck {
   cards: Card[] = [];
 
-  constructor(cards: Card[] | undefined = undefined) {
+  constructor(cards?: Card[]) {
     if (cards !== undefined) {
       this.cards = cards;
     } else {
       for (let i = 1; i < 14; i++) {
-        for (let j in CardSuit) {
+        for (const j in CardSuit) {
           this.cards.push(new Card(i, CardSuit[j]));
         }
       }
@@ -102,7 +102,7 @@ class BlackJack {
   constructor(players: string[], deck: Deck = new Deck()) {
     this.deck = deck;
     this.players = players;
-    for (let player of players) {
+    for (const player of players) {
       this.hands[player] = [this.deck.pop(), this.deck.pop()];
     }
   }
@@ -113,7 +113,7 @@ class BlackJack {
 
   static getBalance(hand: Card[]): number {
     let hasAce = false, balance = 0;
-    for (let card of hand) {
+    for (const card of hand) {
       hasAce ||= card.value === 1;
       balance += Math.min(card.value, 10);
     }
@@ -156,7 +156,7 @@ class BlackJack {
 
   calcResult(): GameResult {
     let ranking: { [key: number]: string[] } = {};
-    for (let player of this.players) {
+    for (const player of this.players) {
       const score = BlackJack.getScore(this.hands[player]);
       ranking[score] ||= [];
       ranking[score].push(player);
