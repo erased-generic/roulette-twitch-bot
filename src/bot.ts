@@ -96,31 +96,28 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
 
   console.log(`${context.username}: ${msg}`);
 
-  // Remove whitespace from chat message
   msg = msg.trim();
   if (msg.startsWith('!')) {
     const cmd = msg.split(/\s+/);
-    for (const key in theBot.handlers) {
-      // TODO: why loop???
-      if (cmd[0] === `!${key}`) {
-        const userId = context['user-id'];
-        if (userId === undefined) {
-          client.say(target, `Sorry, I don't know who you are, ${context['username']}!`);
-          return;
-        }
-        let chatContext = {
-          ...context,
-          "user-id": userId,
-          mod: (context.mod === true) ||
-               (context.badges?.broadcaster !== undefined)
-        };
-        theBot.onHandlerCalled(chatContext, cmd)
-        const response = theBot.handlers[key](chatContext, cmd);
-        if (response !== undefined) {
-          client.say(target, response);
-        }
+    const action = theBot.handlers[cmd[0].substring(1)];
+    if (action !== undefined) {
+      const userId = context['user-id'];
+      if (userId === undefined) {
+        client.say(target, `Sorry, I don't know who you are, ${context['username']}!`);
         return;
       }
+      let chatContext = {
+        ...context,
+        "user-id": userId,
+        mod: (context.mod === true) ||
+             (context.badges?.broadcaster !== undefined)
+      };
+      theBot.onHandlerCalled(chatContext, cmd)
+      const response = action(chatContext, cmd);
+      if (response !== undefined) {
+        client.say(target, response);
+      }
+      return;
     }
 
     console.log(`* ${context.username} Unknown command ${msg}`);
