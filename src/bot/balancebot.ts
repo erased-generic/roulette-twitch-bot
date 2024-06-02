@@ -1,6 +1,6 @@
 export { BalanceBot };
 
-import * as userDataModule from '../util/userdata';
+import { UserData } from '../util/userdata';
 import { Bot, ChatContext } from '../util/interfaces';
 import { BotBase, PerUserData } from './botbase';
 
@@ -11,7 +11,7 @@ class BalanceBot extends BotBase implements Bot {
     "leaderboard": this.leaderboardHandler.bind(this),
   };
 
-  constructor(userData: userDataModule.UserData<PerUserData>) {
+  constructor(userData: UserData<PerUserData>) {
     super(userData);
   }
 
@@ -61,6 +61,7 @@ class BalanceBot extends BotBase implements Bot {
       inPlaceValue.lastClaim = now;
       balance = inPlaceValue.balance += claimSize;
     });
+    console.log(`* claim: ${userId}, ${context.username}, ${claimSize}`);
     return `You claimed ${claimSize} points and now have ${balance} points, ${context['username']}!`;
   }
 

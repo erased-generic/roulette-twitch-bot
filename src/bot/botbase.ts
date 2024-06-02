@@ -1,6 +1,6 @@
 export { PerUserData, onReadUserData, BotBase, UsernameUpdaterBot, composeBotsWithUsernameUpdater };
 
-import * as userDataModule from '../util/userdata';
+import { UserData } from '../util/userdata';
 import { Bot, ChatContext, composeBots } from '../util/interfaces';
 import { RouletteBase } from '../util/roulette';
 
@@ -25,8 +25,8 @@ function onReadUserData(read: any): PerUserData {
 }
 
 abstract class BotBase {
-  readonly userData: userDataModule.UserData<PerUserData>;
-  constructor(userData: userDataModule.UserData<PerUserData>) {
+  readonly userData: UserData<PerUserData>;
+  constructor(userData: UserData<PerUserData>) {
     this.userData = userData;
   }
 
@@ -139,7 +139,7 @@ abstract class BotBase {
 class UsernameUpdaterBot extends BotBase implements Bot {
   handlers: {};
 
-  constructor(userData: userDataModule.UserData<PerUserData>) {
+  constructor(userData: UserData<PerUserData>) {
     super(userData);
   }
 
@@ -149,8 +149,8 @@ class UsernameUpdaterBot extends BotBase implements Bot {
 }
 
 function composeBotsWithUsernameUpdater(
-  botConstructors: ((userData: userDataModule.UserData<PerUserData>) => Bot)[],
-  userData: userDataModule.UserData<PerUserData>
+  botConstructors: ((userData: UserData<PerUserData>) => Bot)[],
+  userData: UserData<PerUserData>
 ): Bot {
   const bots = [new UsernameUpdaterBot(userData), ...botConstructors.map(constructor => constructor(userData))];
   return composeBots(bots);

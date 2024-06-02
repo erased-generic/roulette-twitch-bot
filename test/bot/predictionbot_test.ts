@@ -1,7 +1,6 @@
-import { PredictCommand, PredictionBot } from '../src/bot/predictionbot';
-import { ChatContext } from '../src/util/interfaces';
+import { PredictCommand, PredictionBot } from '../../src/bot/predictionbot';
+import { ChatContext } from '../../src/util/interfaces';
 import { createTestBot, createTestUserData, instanceTestHandler, instanceTestParser, setBalanceNoReserved } from './utils';
-import * as assert from 'assert';
 
 function parse(instance: PredictionBot, args: string[]) {
   return PredictionBot.parsePredictCommand(["", ...args], instance.all_places);

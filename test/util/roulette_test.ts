@@ -1,4 +1,4 @@
-import { Bet, RouletteBase, Roulette, Prediction } from '../src/util/roulette';
+import { Bet, RouletteBase, Roulette, Prediction } from '../../src/util/roulette';
 import * as assert from 'assert';
 
 interface ExpectedWinning {

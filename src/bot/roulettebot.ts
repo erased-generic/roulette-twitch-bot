@@ -1,7 +1,7 @@
 export { BetCommand, RouletteBot };
 
 import * as rouletteModule from '../util/roulette';
-import * as userDataModule from '../util/userdata';
+import { UserData } from '../util/userdata';
 import { Bot, ChatContext } from '../util/interfaces';
 import { BotBase, PerUserData } from './botbase';
 
@@ -22,7 +22,7 @@ class RouletteBot extends BotBase implements Bot {
 
   readonly roulette = new rouletteModule.Roulette(RouletteBot.N_PLACES);
 
-  constructor(userData: userDataModule.UserData<PerUserData>) {
+  constructor(userData: UserData<PerUserData>) {
     super(userData);
   }
 
@@ -129,7 +129,7 @@ class RouletteBot extends BotBase implements Bot {
     if (typeof amount === 'string') {
       return amount;
     }
-    console.log(`* bet ${userId}, ${betCommand.amount}, ${betCommand.betNumbers}`);
+    console.log(`* bet: ${userId}, ${context.username}, ${betCommand.amount}, ${betCommand.betNumbers}`);
     return `${context.username} placed a bet of ${amount} on ${betCommand.betName}!`;
   }
 
@@ -137,6 +137,7 @@ class RouletteBot extends BotBase implements Bot {
     // Remove a bet
     const userId = context['user-id'];
     this.unbet(this.roulette, userId);
+    console.log(`* unbet: ${userId}, ${context.username}`);
     return `${context.username} is not betting anymore!`;
   }
 
@@ -154,6 +155,7 @@ class RouletteBot extends BotBase implements Bot {
       }
     });
     this.roulette.computeWinnings((playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => {
+      console.log(`* roulette: ${playerId}, ${this.getUsername(playerId)}, ${payout}`);
       msg += ", " + callback(playerId, didWin, chance, amount, payout);
     });
     return msg;

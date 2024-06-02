@@ -1,7 +1,7 @@
 export { PredictCommand, PredictionBot };
 
 import * as rouletteModule from '../util/roulette';
-import * as userDataModule from '../util/userdata';
+import { UserData } from '../util/userdata';
 import { Bot, ChatContext } from '../util/interfaces';
 import { PerUserData, BotBase } from './botbase';
 
@@ -25,7 +25,7 @@ class PredictionBot extends BotBase implements Bot {
   readonly prediction: rouletteModule.Prediction;
   predictionOpen = false;
 
-  constructor(userData: userDataModule.UserData<PerUserData>, n: number) {
+  constructor(userData: UserData<PerUserData>, n: number) {
     super(userData);
     this.n_places = n;
     this.all_places = rouletteModule.RouletteBase.getAllNumbers(n);
@@ -70,7 +70,7 @@ class PredictionBot extends BotBase implements Bot {
     if (typeof amount === 'string') {
       return amount;
     }
-    console.log(`* predict ${userId}, ${predictCommand.amount}, ${predictCommand.predictNumber}`);
+    console.log(`* predict: ${userId}, ${context.username}, ${predictCommand.amount}, ${predictCommand.predictNumber}`);
     return `${context.username} predicted ${predictCommand.predictNumber} with ${amount} points!`;
   }
 
@@ -80,6 +80,7 @@ class PredictionBot extends BotBase implements Bot {
     }
     const userId = context['user-id'];
     this.unbet(this.prediction, userId);
+    console.log(`* unpredict: ${userId}, ${context.username}`);
     return `${context.username} is not predicting anymore!`;
   }
 
@@ -109,6 +110,7 @@ class PredictionBot extends BotBase implements Bot {
     }
     this.predictionOpen = false;
     this.unbetAll(this.prediction);
+    console.log(`* refund`);
     return `An honorable mod has refunded the prediction!`;
   }
 
@@ -117,6 +119,7 @@ class PredictionBot extends BotBase implements Bot {
       return `Peasant ${context['username']}, you can't open predictions!`;
     }
     this.predictionOpen = true;
+    console.log(`* open`);
     return `An honorable mod has opened a prediction!`;
   }
 
@@ -125,6 +128,7 @@ class PredictionBot extends BotBase implements Bot {
       return `Peasant ${context['username']}, you can't close predictions!`;
     }
     this.predictionOpen = false;
+    console.log(`* close`);
     return `An honorable mod has closed the prediction!`;
   }
 
@@ -161,6 +165,7 @@ class PredictionBot extends BotBase implements Bot {
       }
     });
     this.prediction.computeWinnings((playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => {
+      console.log(`* outcome: ${playerId}, ${this.getUsername(playerId)}, ${payout}`);
       msg += ", " + callback(playerId, didWin, chance, amount, payout);
     });
     return msg;

@@ -1,6 +1,5 @@
-import { ChatContext } from '../src/util/interfaces';
+import { ChatContext } from '../../src/util/interfaces';
 import { createTestBot, createTestUserData, instanceTestHandler, setBalanceNoReserved } from './utils';
-import * as assert from 'assert';
 
 // Test the bot itself
 const userData = createTestUserData();

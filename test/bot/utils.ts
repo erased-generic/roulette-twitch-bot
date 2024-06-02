@@ -9,10 +9,10 @@ export {
 };
 
 import * as assert from 'assert';
-import { Bot, ChatContext } from '../src/util/interfaces';
-import { PerUserData, composeBotsWithUsernameUpdater, onReadUserData } from '../src/bot/botbase';
-import { MemoryUserData, UserData } from '../src/util/userdata';
-import { BalanceBot } from '../src/bot/balancebot';
+import { Bot, ChatContext } from '../../src/util/interfaces';
+import { PerUserData, composeBotsWithUsernameUpdater, onReadUserData } from '../../src/bot/botbase';
+import { MemoryUserData, UserData } from '../../src/util/userdata';
+import { BalanceBot } from '../../src/bot/balancebot';
 
 function createTestUserData() {
   return new MemoryUserData<PerUserData>(onReadUserData, {});

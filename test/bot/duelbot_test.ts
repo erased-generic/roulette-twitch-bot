@@ -1,8 +1,7 @@
-import { DuelCommand, DuelBot } from '../src/bot/duelbot';
-import { ChatContext } from '../src/util/interfaces';
-import { Card, CardSuit, Deck } from '../src/util/blackjack';
+import { DuelCommand, DuelBot } from '../../src/bot/duelbot';
+import { ChatContext } from '../../src/util/interfaces';
+import { Card, CardSuit, Deck } from '../../src/util/blackjack';
 import { createTestBot, createTestUserData, instanceTestHandler, instanceTestParser, setBalanceNoReserved } from './utils';
-import * as assert from 'assert';
 
 function parse(args: string[]) {
   return DuelBot.parseDuelCommand(["", ...args]);
@@ -15,7 +14,7 @@ function testParser(command: string, expected: DuelCommand | undefined) {
 const userData = createTestUserData();
 const myDeck = new Deck();
 let instance = createTestBot([
-  u => new DuelBot(userData, () => myDeck, 0) // use this deck interface and don't shuffle players
+  u => new DuelBot(u, () => myDeck, 0) // use this deck interface and don't shuffle players
 ], userData);
 
 testParser("100 aaa", {

@@ -1,7 +1,6 @@
-import { BetCommand, RouletteBot } from '../src/bot/roulettebot';
-import { ChatContext } from '../src/util/interfaces';
+import { BetCommand, RouletteBot } from '../../src/bot/roulettebot';
+import { ChatContext } from '../../src/util/interfaces';
 import { createTestBot, createTestUserData, instanceTestHandler, instanceTestParser, setBalanceNoReserved } from './utils';
-import * as assert from 'assert';
 
 function parse(args: string[]) {
   return RouletteBot.parseBetCommand(["", ...args]);
