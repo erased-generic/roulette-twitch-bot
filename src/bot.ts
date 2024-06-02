@@ -1,17 +1,18 @@
 import * as interfaces from './util/interfaces';
+import * as balanceBot from './bot/balancebot';
 import * as rouletteBot from './bot/roulettebot';
 import * as predictionBot from './bot/predictionbot';
 import * as duelBot from './bot/duelbot';
 import * as botBase from './bot/botbase';
 import * as userDataModule from './util/userdata';
 
-const userData = new userDataModule.UserData<botBase.PerUserData>(botBase.onReadUserData, "data/table.json");
-const theBot: interfaces.Bot = interfaces.composeBots([
-  new botBase.UsernameUpdaterBot(userData),
-  new rouletteBot.RouletteBot(userData),
-  new predictionBot.PredictionBot(userData, 100),
-  new duelBot.DuelBot(userData),
-])
+const userData = new userDataModule.FileUserData<botBase.PerUserData>(botBase.onReadUserData, "data/table.json");
+const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater([
+  u => new balanceBot.BalanceBot(u),
+  u => new rouletteBot.RouletteBot(u),
+  u => new predictionBot.PredictionBot(u, 100),
+  u => new duelBot.DuelBot(u),
+], userData);
 
 import * as fs from 'fs';
 import * as tmi from 'tmi.js';
@@ -100,6 +101,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   if (msg.startsWith('!')) {
     const cmd = msg.split(/\s+/);
     for (const key in theBot.handlers) {
+      // TODO: why loop???
       if (cmd[0] === `!${key}`) {
         const userId = context['user-id'];
         if (userId === undefined) {

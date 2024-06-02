@@ -1,7 +1,7 @@
-export { PerUserData, onReadUserData, BotBase, UsernameUpdaterBot };
+export { PerUserData, onReadUserData, BotBase, UsernameUpdaterBot, composeBotsWithUsernameUpdater };
 
 import * as userDataModule from '../util/userdata';
-import { Bot, ChatContext } from '../util/interfaces';
+import { Bot, ChatContext, composeBots } from '../util/interfaces';
 import { RouletteBase } from '../util/roulette';
 
 interface PerUserData {
@@ -61,7 +61,11 @@ abstract class BotBase {
   }
 
   updateUsername(context: ChatContext) {
-    this.userData.update(context['user-id'], (inPlaceValue, hadKey) => { inPlaceValue.username = context.username; });
+    this.userData.get(context['user-id']).username = context.username;
+  }
+
+  getUsername(userId: string) {
+    return this.userData.get(userId).username;
   }
 
   protected getBalanceInfo(info: PerUserData): number {
@@ -142,4 +146,12 @@ class UsernameUpdaterBot extends BotBase implements Bot {
   onHandlerCalled(context: ChatContext, args: string[]): void {
     this.updateUsername(context);
   }
+}
+
+function composeBotsWithUsernameUpdater(
+  botConstructors: ((userData: userDataModule.UserData<PerUserData>) => Bot)[],
+  userData: userDataModule.UserData<PerUserData>
+): Bot {
+  const bots = [new UsernameUpdaterBot(userData), ...botConstructors.map(constructor => constructor(userData))];
+  return composeBots(bots);
 }

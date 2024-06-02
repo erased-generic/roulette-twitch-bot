@@ -1,25 +1,20 @@
-export { UserData };
+export { UserData, FileUserData, MemoryUserData };
 
 import * as fs from 'fs';
 
-class UserData<T> {
+abstract class UserData<T> {
   readonly userData: { [key: string]: T } = {};
-  readonly filePath: string;
   readonly onReadValue: (read: any) => T;
 
-  constructor(onReadValue: (read: any) => T, filePath: string) {
-    this.filePath = filePath;
+  constructor(onReadValue: (read: any) => T, readUserData: () => any) {
     this.onReadValue = onReadValue;
-    if (fs.existsSync(filePath)) {
-      const parsedData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      for (const key in parsedData) {
-        const filledData = onReadValue(parsedData[key]);
-        this.userData[key] = filledData;
-      }
+    const parsedData = readUserData();
+    for (const key in parsedData) {
+      const filledData = onReadValue(parsedData[key]);
+      this.userData[key] = filledData;
     }
   }
 
-  // Function to get user data
   get(userId: string): T {
     if (userId in this.userData) {
       return this.userData[userId];
@@ -27,7 +22,6 @@ class UserData<T> {
     return this.update(userId, (inPlaceValue, hadKey) => {});
   }
 
-  // Function to update user data
   update(userId: string, updater: (inPlaceValue: T, hadKey: boolean) => void): T {
     let hadKey = true;
     if (!(userId in this.userData)) {
@@ -36,17 +30,39 @@ class UserData<T> {
     }
     const saved = this.userData[userId];
     updater(saved, hadKey);
-    this.saveUserData();
+    this.writeUserData();
     return saved;
   }
 
-  // Function to get all of the data
   getAll(): { [key: string]: T } {
     return this.userData;
   }
 
-  // Function to save user data to file
-  saveUserData() {
+  abstract writeUserData(): void;
+}
+
+class FileUserData<T> extends UserData<T> {
+  readonly filePath: string;
+
+  constructor(onReadValue: (read: any) => T, filePath: string) {
+    super(onReadValue, () => {
+      if (fs.existsSync(filePath)) {
+        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      }
+      return {};
+    });
+    this.filePath = filePath;
+  }
+
+  writeUserData() {
     fs.writeFileSync(this.filePath, JSON.stringify(this.userData), 'utf8');
   }
+}
+
+class MemoryUserData<T> extends UserData<T> {
+  constructor(onReadValue: (read: any) => T, init: any) {
+    super(onReadValue, () => init);
+  }
+
+  writeUserData() {}
 }

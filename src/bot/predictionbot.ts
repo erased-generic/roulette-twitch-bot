@@ -43,6 +43,9 @@ class PredictionBot extends BotBase implements Bot {
     if (tokens.length < 3) {
       return "too few arguments";
     }
+    if (tokens.length > 3) {
+      return "too many arguments";
+    }
 
     const parsed = BotBase.parseSpaceRange(tokens[2], all_places);
     if (typeof parsed === 'string') {
@@ -111,7 +114,7 @@ class PredictionBot extends BotBase implements Bot {
 
   openPredictionHandler(context: ChatContext, args: string[]): string | undefined {
     if (!context.mod) {
-      return `Peasant ${context['username']}, you can't open a prediction!`;
+      return `Peasant ${context['username']}, you can't open predictions!`;
     }
     this.predictionOpen = true;
     return `An honorable mod has opened a prediction!`;
@@ -119,10 +122,10 @@ class PredictionBot extends BotBase implements Bot {
 
   closePredictionHandler(context: ChatContext, args: string[]): string | undefined {
     if (!context.mod) {
-      return `Peasant ${context['username']}, you can't close a prediction!`;
+      return `Peasant ${context['username']}, you can't close predictions!`;
     }
     this.predictionOpen = false;
-    return `An honorable mod has closed a prediction!`;
+    return `An honorable mod has closed the prediction!`;
   }
 
   outcomeHandler(context: ChatContext, args: string[]): string | undefined {
