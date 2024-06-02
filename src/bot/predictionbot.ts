@@ -2,7 +2,7 @@ export { PredictCommand, PredictionBot };
 
 import * as rouletteModule from '../util/roulette';
 import { UserData } from '../util/userdata';
-import { Bot, ChatContext } from '../util/interfaces';
+import { Bot, BotHandler, ChatContext } from '../util/interfaces';
 import { PerUserData, BotBase } from './botbase';
 
 interface PredictCommand {
@@ -11,14 +11,42 @@ interface PredictCommand {
 }
 
 class PredictionBot extends BotBase implements Bot {
-  readonly handlers: { [key: string]: (context: ChatContext, args: string[]) => string | undefined } = {
-    "predict": this.predictHandler.bind(this),
-    "unpredict": this.unpredictHandler.bind(this),
-    "open": this.openPredictionHandler.bind(this),
-    "status": this.predictStatusHandler.bind(this),
-    "close": this.closePredictionHandler.bind(this),
-    "refund": this.refundHandler.bind(this),
-    "outcome": this.outcomeHandler.bind(this),
+  readonly handlers: { [key: string]: BotHandler } = {
+    "predict": {
+      action: this.predictHandler.bind(this),
+      description: "Predict an outcome, replacing any previous predictions",
+      format: "<amount of points> <outcome number>"
+    },
+    "unpredict": {
+      action: this.unpredictHandler.bind(this),
+      description: "Remove all your predictions",
+      format: ""
+    },
+    "open": {
+      action: this.openPredictionHandler.bind(this),
+      description: "Open a prediction (mod-only)",
+      format: ""
+    },
+    "status": {
+      action: this.predictStatusHandler.bind(this),
+      description: "View the status of the current prediction",
+      format: ""
+    },
+    "close": {
+      action: this.closePredictionHandler.bind(this),
+      description: "Close the current prediction (mod-only)",
+      format: ""
+    },
+    "refund": {
+      action: this.refundHandler.bind(this),
+      description: "Refund the current prediction (mod-only)",
+      format: ""
+    },
+    "outcome": {
+      action: this.outcomeHandler.bind(this),
+      description: "Select a prediction outcome (mod-only)",
+      format: "<outcome number>"
+    },
   };
   readonly n_places: number;
   readonly all_places: number[];

@@ -3,7 +3,7 @@ export { DuelCommand, DuelBot };
 import * as rouletteModule from '../util/roulette';
 import * as blackjackModule from '../util/blackjack';
 import { UserData } from '../util/userdata';
-import { Bot, ChatContext } from '../util/interfaces';
+import { Bot, BotHandler, ChatContext } from '../util/interfaces';
 import { BotBase, PerUserData } from './botbase';
 
 class DuelRendezvous {
@@ -37,13 +37,38 @@ interface DuelCommand {
 }
 
 class DuelBot extends BotBase implements Bot {
-  readonly handlers: { [key: string]: (context: ChatContext, args: string[]) => string | undefined } = {
-    "duel": this.duelHandler.bind(this),
-    "accept": this.acceptHandler.bind(this),
-    "hit": this.hitHandler.bind(this),
-    "stand": this.standHandler.bind(this),
-    "unduel": this.unduelHandler.bind(this),
-    "rendezvous": this.rendezvousHandler.bind(this),
+  readonly handlers: { [key: string]: BotHandler } = {
+    "duel": {
+      action: this.duelHandler.bind(this),
+      description: "Request a blackjack duel with another user (they still need to accept it). " +
+        "Multiple concurrent duels are supported",
+      format: "<amount of points> <opponent username>"
+    },
+    "accept": {
+      action: this.acceptHandler.bind(this),
+      description: "Accept a blackjack duel request from another user. If you don't have enough points, you go all-in",
+      format: "[<opponent username>]"
+    },
+    "hit": {
+      action: this.hitHandler.bind(this),
+      description: "Blackjack duel interface. Pull a card",
+      format: ""
+    },
+    "stand": {
+      action: this.standHandler.bind(this),
+      description: "Blackjack duel interface. Stand and end your turn",
+      format: ""
+    },
+    "unduel": {
+      action: this.unduelHandler.bind(this),
+      description: "Retract all your blackjack dueling requests and forfeit any ongoing duels",
+      format: ""
+    },
+    "rendezvous": {
+      action: this.rendezvousHandler.bind(this),
+      description: "View all ongoing blackjack duels and duel requests",
+      format: ""
+    },
   };
 
   readonly duels: { [key: string]: DuelRendezvous } = {};
@@ -99,7 +124,7 @@ class DuelBot extends BotBase implements Bot {
     const username2 = duelCommand.username;
     this.duels[userId1] = new DuelRendezvous(userId1, username2, amount);
     console.log(`* rendezvous: ${userId1} ${this.getUsername(userId1)}, ${username2}, ${amount}`);
-    return `${username2}, reply with !accept [${context['username']}] to accept the duel, if you're ready to bet ${amount} points!`;
+    return `${username2}, reply with !accept [${context['username']}] to accept the blackjack duel, if you're ready to bet ${amount} points!`;
   }
 
   private unrendezvous(duel: DuelRendezvous) {
@@ -314,7 +339,7 @@ class DuelBot extends BotBase implements Bot {
       }
     }
     if (isFirst) {
-      msg += "nothing.";
+      msg += "no blackjack duels or duel requests.";
     }
     return msg;
   }

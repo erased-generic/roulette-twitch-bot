@@ -70,12 +70,12 @@ testHandler(
 testHandler(
   aChatContext,
   "!duel 10 mod",
-  /mod, reply with !accept \[a\] to accept the duel, if you're ready to bet 10 points!/
+  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   aChatContext,
   "!duel all mod",
-  /mod, reply with !accept \[a\] to accept the duel, if you're ready to bet 70 points!/
+  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 70 points!/
 );
 testHandler(
   aChatContext,
@@ -99,5 +99,5 @@ testHandler(
 testHandler(
   aChatContext,
   "!duel all mod",
-  /mod, reply with !accept \[a\] to accept the duel, if you're ready to bet 140 points!/
+  /mod, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 140 points!/
 );

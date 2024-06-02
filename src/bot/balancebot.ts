@@ -1,14 +1,26 @@
 export { BalanceBot };
 
 import { UserData } from '../util/userdata';
-import { Bot, ChatContext } from '../util/interfaces';
+import { Bot, BotHandler, ChatContext } from '../util/interfaces';
 import { BotBase, PerUserData } from './botbase';
 
 class BalanceBot extends BotBase implements Bot {
-  readonly handlers: { [key: string]: (context: ChatContext, args: string[]) => string | undefined } = {
-    "claim": this.claimHandler.bind(this),
-    "balance": this.pointsHandler.bind(this),
-    "leaderboard": this.leaderboardHandler.bind(this),
+  readonly handlers: { [key: string]: BotHandler } = {
+    "claim": {
+      action: this.claimHandler.bind(this),
+      description: "Claim 100 points with 30-minute cooldown",
+      format: ""
+    },
+    "balance": {
+      action: this.pointsHandler.bind(this),
+      description: "View your balance",
+      format: ""
+    },
+    "leaderboard": {
+      action: this.leaderboardHandler.bind(this),
+      description: "View the leaderboard, sorted by the amount of points",
+      format: "[<number of entries to show>]"
+    },
   };
 
   constructor(userData: UserData<PerUserData>) {

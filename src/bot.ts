@@ -113,7 +113,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
              (context.badges?.broadcaster !== undefined)
       };
       theBot.onHandlerCalled(chatContext, cmd)
-      const response = action(chatContext, cmd);
+      const response = action.action(chatContext, cmd);
       if (response !== undefined) {
         client.say(target, response);
       }

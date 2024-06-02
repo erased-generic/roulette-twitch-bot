@@ -41,7 +41,7 @@ function instanceTestHandler(botInstance: Bot, chatContext: ChatContext, command
   const args = splitCommand(command);
   let name = args[0].substring(1);
   botInstance.onHandlerCalled(chatContext, args);
-  assert.match(botInstance.handlers[name](chatContext, args), expected);
+  assert.match(botInstance.handlers[name].action(chatContext, args), expected);
 }
 
 function setBalance(userData: UserData<PerUserData>, userId: string, balance: number) {

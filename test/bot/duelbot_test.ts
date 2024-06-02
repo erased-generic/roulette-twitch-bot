@@ -73,12 +73,12 @@ testHandler(
 testHandler(
   aChatContext,
   "!duel 10 b",
-  /b, reply with !accept \[a\] to accept the duel, if you're ready to bet 10 points!/
+  /b, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   bChatContext,
   "!duel 10 a",
-  /a, reply with !accept \[b\] to accept the duel, if you're ready to bet 10 points!/
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   aChatContext,
@@ -113,14 +113,14 @@ testHandler(
 testHandler(
   bChatContext,
   "!duel all a",
-  /a, reply with !accept \[b\] to accept the duel, if you're ready to bet 100 points!/
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 100 points!/
 );
 
 // test that duel requests overwrite each other
 testHandler(
   aChatContext,
   "!duel 10 b",
-  /b, reply with !accept \[a\] to accept the duel, if you're ready to bet 10 points!/
+  /b, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   aChatContext,
@@ -130,7 +130,7 @@ testHandler(
 testHandler(
   aChatContext,
   "!duel 30 b",
-  /b, reply with !accept \[a\] to accept the duel, if you're ready to bet 30 points!/
+  /b, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 30 points!/
 );
 testHandler(
   aChatContext,
@@ -148,7 +148,7 @@ setBalanceNoReserved(userData, "a", 0);
 testHandler(
   aChatContext,
   "!duel all b",
-  /b, reply with !accept \[a\] to accept the duel, if you're ready to bet 0 points!/
+  /b, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 0 points!/
 );
 
 // test that you go all-in if you don't have enough points for accepting the duel
@@ -161,7 +161,7 @@ setBalanceNoReserved(userData, "a", 10);
 testHandler(
   bChatContext,
   "!duel 30 a",
-  /a, reply with !accept \[b\] to accept the duel, if you're ready to bet 30 points!/
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 30 points!/
 );
 testHandler(
   aChatContext,
@@ -181,7 +181,7 @@ setBalanceNoReserved(userData, "b", 100);
 testHandler(
   bChatContext,
   "!duel 10 a",
-  /a, reply with !accept \[b\] to accept the duel, if you're ready to bet 10 points!/
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   cChatContext,
@@ -261,7 +261,7 @@ setBalanceNoReserved(userData, "b", 100);
 testHandler(
   bChatContext,
   "!duel 10 a",
-  /a, reply with !accept \[b\] to accept the duel, if you're ready to bet 10 points!/
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   aChatContext,
@@ -312,7 +312,7 @@ setBalanceNoReserved(userData, "b", 100);
 testHandler(
   bChatContext,
   "!duel 10 a",
-  /a, reply with !accept \[b\] to accept the duel, if you're ready to bet 10 points!/
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   aChatContext,
@@ -383,12 +383,12 @@ userData.get("d").balance = 100;
 testHandler(
   bChatContext,
   "!duel 10 a",
-  /a, reply with !accept \[b\] to accept the duel, if you're ready to bet 10 points!/
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
 testHandler(
   cChatContext,
   "!duel 20 d",
-  /d, reply with !accept \[c\] to accept the duel, if you're ready to bet 20 points!/
+  /d, reply with !accept \[c\] to accept the blackjack duel, if you're ready to bet 20 points!/
 );
 testHandler(
   dChatContext,

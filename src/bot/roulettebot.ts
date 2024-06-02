@@ -2,7 +2,7 @@ export { BetCommand, RouletteBot };
 
 import * as rouletteModule from '../util/roulette';
 import { UserData } from '../util/userdata';
-import { Bot, ChatContext } from '../util/interfaces';
+import { Bot, BotHandler, ChatContext } from '../util/interfaces';
 import { BotBase, PerUserData } from './botbase';
 
 interface BetCommand {
@@ -11,11 +11,46 @@ interface BetCommand {
   amount: number;
 }
 
+enum PredefinedBets {
+  Red = "red",
+  Black = "black",
+  Green = "green",
+  Column1 = "column1",
+  Column2 = "column2",
+  Column3 = "column3",
+  Dozen1 = "dozen1",
+  Dozen2 = "dozen2",
+  Dozen3 = "dozen3",
+  Odd = "odd",
+  Even = "even",
+  "1to18" = "1to18",
+  "19to36" = "19to36",
+  All = "all",
+  All0 = "all0",
+}
+
 class RouletteBot extends BotBase implements Bot {
-  readonly handlers: { [key: string]: (context: ChatContext, args: string[]) => string | undefined } = {
-    "bet": this.betHandler.bind(this),
-    "unbet": this.unbetHandler.bind(this),
-    "roulette": this.rouletteHandler.bind(this),
+  readonly handlers: { [key: string]: BotHandler } = {
+    "bet": {
+      action: this.betHandler.bind(this),
+      description: "Place a bet, replacing any previous bets. For a full list of predefined bet names, type !bets",
+      format: "<amount of points> <bet name|(outcome number...)>"
+    },
+    "bets": {
+      action: this.betsHandler.bind(this),
+      description: "View all possible predefined bets",
+      format: ""
+    },
+    "unbet": {
+      action: this.unbetHandler.bind(this),
+      description: "Remove all your bets",
+      format: ""
+    },
+    "roulette": {
+      action: this.rouletteHandler.bind(this),
+      description: "Start the roulette game",
+      format: ""
+    },
   };
   static readonly N_PLACES = 37;
   static readonly ALL_PLACES = rouletteModule.RouletteBase.getAllNumbers(RouletteBot.N_PLACES);
@@ -59,49 +94,49 @@ class RouletteBot extends BotBase implements Bot {
     betName = betType;
     const allNumbers = RouletteBot.ALL_PLACES;
     switch (betType) {
-      case "red":
+      case PredefinedBets.Red:
         betNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
         break;
-      case "black":
+      case PredefinedBets.Black:
         betNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
         break;
-      case "green":
+      case PredefinedBets.Green:
         betNumbers = [0];
         break;
-      case "column1":
+      case PredefinedBets.Column1:
         betNumbers = allNumbers.filter(x => x % 3 === 1);
         break;
-      case "column2":
+      case PredefinedBets.Column2:
         betNumbers = allNumbers.filter(x => x % 3 === 2);
         break;
-      case "column3":
+      case PredefinedBets.Column3:
         betNumbers = allNumbers.filter(x => x % 3 === 0 && x !== 0);
         break;
-      case "dozen1":
+      case PredefinedBets.Dozen1:
         betNumbers = allNumbers.filter(x => x >= 1 && x <= 12);
         break;
-      case "dozen2":
+      case PredefinedBets.Dozen2:
         betNumbers = allNumbers.filter(x => x >= 13 && x <= 24);
         break;
-      case "dozen3":
+      case PredefinedBets.Dozen3:
         betNumbers = allNumbers.filter(x => x >= 25 && x <= 36);
         break;
-      case "odd":
+      case PredefinedBets.Odd:
         betNumbers = allNumbers.filter(x => x % 2 === 1);
         break;
-      case "even":
+      case PredefinedBets.Even:
         betNumbers = allNumbers.filter(x => x % 2 === 0 && x !== 0);
         break;
-      case "1to18":
+      case PredefinedBets["1to18"]:
         betNumbers = allNumbers.filter(x => x >= 1 && x <= 18);
         break;
-      case "19to36":
+      case PredefinedBets["19to36"]:
         betNumbers = allNumbers.filter(x => x >= 19 && x <= 36);
         break;
-      case "all":
+      case PredefinedBets.All:
         betNumbers = allNumbers.filter(x => x > 0);
         break;
-      case "all0":
+      case PredefinedBets.All0:
         betNumbers = allNumbers;
         break;
       default: {
@@ -131,6 +166,11 @@ class RouletteBot extends BotBase implements Bot {
     }
     console.log(`* bet: ${userId}, ${context.username}, ${betCommand.amount}, ${betCommand.betNumbers}`);
     return `${context.username} placed a bet of ${amount} on ${betCommand.betName}!`;
+  }
+
+  betsHandler(context: ChatContext, args: string[]): string | undefined {
+    // List all bets
+    return `List of predefined bets: ${Object.values(PredefinedBets).join(", ")}`;
   }
 
   unbetHandler(context: ChatContext, args: string[]): string | undefined {
