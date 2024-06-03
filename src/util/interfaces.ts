@@ -34,7 +34,7 @@ function selectHandler(bot: Bot, command: string): { handler?: BotHandler, key: 
 function callHandler(bot: Bot, handler: BotHandler, context: ChatContext, args: string[]): string | undefined {
   bot.onHandlerCalled(context, args);
   return handler.action(context, args)
-    .replace("%{format}", `${args[0]} ${handler.format}`);
+    ?.replace("%{format}", `${args[0]} ${handler.format}`);
 }
 
 function composeBots(bots: Bot[]): Bot {
