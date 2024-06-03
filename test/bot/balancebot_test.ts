@@ -29,6 +29,18 @@ testHandler(
   "!claim",
   /on cooldown/
 );
+for (let i = 0; i < 10; i++) {
+  userData.get("test").lastClaim = undefined;
+  setBalanceNoReserved(userData, "test", 1000);
+  testHandler(
+    testChatContext,
+    "!claime 100",
+    new RegExp(
+      "(You halved your balance! You claimed -500 points)|" +
+      "(You doubled your balance! You claimed 1000 points)"
+    )
+  );
+}
 
 // test leaderboard
 setBalanceNoReserved(userData, "test", 100);

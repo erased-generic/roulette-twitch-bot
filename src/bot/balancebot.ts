@@ -11,6 +11,11 @@ class BalanceBot extends BotBase implements Bot {
       description: "Claim 100 points with 30-minute cooldown",
       format: ""
     },
+    "claime": {
+      action: this.claimeHandler.bind(this),
+      description: "Claim 100 points with 30-minute cooldown. If you're (un)lucky, doubles or halves your balance",
+      format: "[<chance in %>]=1"
+    },
     "balance": {
       action: this.pointsHandler.bind(this),
       description: "View your balance",
@@ -41,8 +46,9 @@ class BalanceBot extends BotBase implements Bot {
     return msg + `, ${context['username']}!`;
   }
 
-  claimHandler(context: ChatContext, args: string[]): string | undefined {
+  doClaim(context: ChatContext, chance: number): string | undefined {
     // Claim 100 points per 30 minutes
+    // If `Math.rand() < chance`, double or half your balance
     const claimSize = 100;
     const minute = 1000 * 60;
     const hour = minute * 60;
@@ -68,13 +74,44 @@ class BalanceBot extends BotBase implements Bot {
         return msg;
       }
     }
-    let balance = 0;
+    let msg = ``;
+    let balance = this.getBalance(userId);
+    let delta = claimSize;
+    if (Math.random() < chance) {
+      if (Math.random() < 0.5) {
+        delta = Math.floor(balance / 2) - balance;
+        msg += `You halved your balance!`
+      } else {
+        delta = balance;
+        msg += `You doubled your balance!`
+      }
+    }
     this.userData.update(userId, (inPlaceValue, hadKey) => {
       inPlaceValue.lastClaim = now;
-      balance = inPlaceValue.balance += claimSize;
+      balance = inPlaceValue.balance += delta;
     });
-    console.log(`* claim: ${userId}, ${context.username}, ${claimSize}`);
-    return `You claimed ${claimSize} points and now have ${balance} points, ${context['username']}!`;
+    if (delta < claimSize) {
+      msg = "Unlucky! "+ msg;
+    } else if (delta > claimSize) {
+      msg = "Lucky! " + msg;
+    }
+    console.log(`* claim: ${userId}, ${context.username}, ${delta}`);
+    return msg + ` You claimed ${delta} points and now have ${balance} points, ${context['username']}!`;
+  }
+
+  claimHandler(context: ChatContext, args: string[]): string | undefined {
+    return this.doClaim(context, 0);
+  }
+
+  claimeHandler(context: ChatContext, args: string[]): string | undefined {
+    if (args.length < 2) {
+      return this.doClaim(context, 0.01);
+    }
+    const chance = parseFloat(args[1]);
+    if (!isFinite(chance)) {
+      return `Parse error: ${args[1]}, try !claime <chance in %>, ${context['username']}!`;
+    }
+    return this.doClaim(context, chance);
   }
 
   leaderboardHandler(context: ChatContext, args: string[]): string | undefined {

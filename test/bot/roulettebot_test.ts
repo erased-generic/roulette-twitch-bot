@@ -398,6 +398,29 @@ for (let i = 0; i < 10; i++) {
   );
 }
 
+for (let i = 0; i < 10; i++) {
+  userData.get("test").lastClaim = undefined;
+  setBalanceNoReserved(userData, "test", 1000);
+  testHandler(
+    testChatContext,
+    "!bet 500 odd",
+    /placed a bet of 500 on odd/
+  );
+  testHandler(
+    testChatContext,
+    "!claime 100",
+    new RegExp(
+      "(You halved your balance! You claimed -250 points)|" +
+      "(You doubled your balance! You claimed 500 points)"
+    )
+  );
+  testHandler(
+    testChatContext,
+    "!unbet",
+    /not betting anymore/
+  );
+}
+
 // test multiple people
 setBalanceNoReserved(userData, "test", 100);
 setBalanceNoReserved(userData, "test1", 100);
