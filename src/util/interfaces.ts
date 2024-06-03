@@ -1,4 +1,4 @@
-export { ChatContext, BotHandler, Bot, composeBots }
+export { ChatContext, BotHandler, Bot, splitCommand, selectHandler, callHandler, composeBots }
 
 interface ChatContext {
   username?: string;
@@ -16,6 +16,25 @@ interface Bot {
   readonly handlers: { [key: string]: BotHandler };
 
   onHandlerCalled(context: ChatContext, args: string[]): void;
+}
+
+function splitCommand(command: string) {
+  return command.split(/\s+/);
+}
+
+function selectHandler(bot: Bot, command: string): { handler?: BotHandler, key: string, args: string[] } | undefined {
+  if (!command.startsWith("!")) {
+    return undefined;
+  }
+  const args = splitCommand(command);
+  const key = args[0].substring(1);
+  return { handler: bot.handlers[key], key, args };
+}
+
+function callHandler(bot: Bot, handler: BotHandler, context: ChatContext, args: string[]): string | undefined {
+  bot.onHandlerCalled(context, args);
+  return handler.action(context, args)
+    .replace("%{format}", `${args[0]} ${handler.format}`);
 }
 
 function composeBots(bots: Bot[]): Bot {

@@ -66,6 +66,10 @@ class RouletteBot extends BotBase implements Bot {
   static parseBetCommand(tokens: string[]): BetCommand | string {
     let betNumbers: number[] = [], amount: number;
 
+    if (tokens.length < 3) {
+      return "too few arguments";
+    }
+
     {
       const parsed = RouletteBot.parseAmount(tokens[1]);
       if (typeof parsed === 'string') {
@@ -74,9 +78,6 @@ class RouletteBot extends BotBase implements Bot {
       amount = parsed;
     }
 
-    if (tokens.length < 3) {
-      return "too few arguments";
-    }
     const parseSpaceRanges = (start: number): number[] | string => {
       const res: number[] = [];
       for (let i = 0; i < tokens.length - start; i++) {
@@ -158,7 +159,7 @@ class RouletteBot extends BotBase implements Bot {
     const userId = context['user-id'];
     const betCommand = RouletteBot.parseBetCommand(args);
     if (typeof betCommand === 'string') {
-      return `Parse error: ${betCommand}, try !bet <points> <outcome...>, ${context['username']}!`;
+      return `Parse error: ${betCommand}, try %{format}, ${context['username']}!`;
     }
     const amount = this.bet(this.roulette, userId, betCommand.amount, betCommand.betNumbers);
     if (typeof amount === 'string') {

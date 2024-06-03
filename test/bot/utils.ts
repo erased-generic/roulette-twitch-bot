@@ -9,7 +9,7 @@ export {
 };
 
 import * as assert from 'assert';
-import { Bot, ChatContext } from '../../src/util/interfaces';
+import { Bot, ChatContext, callHandler, selectHandler, splitCommand } from '../../src/util/interfaces';
 import { PerUserData, composeBotsWithUsernameUpdater, onReadUserData } from '../../src/bot/botbase';
 import { MemoryUserData, UserData } from '../../src/util/userdata';
 import { BalanceBot } from '../../src/bot/balancebot';
@@ -25,10 +25,6 @@ function createTestBot(bots: ((userData: UserData<PerUserData>) => Bot)[], userD
   ], userData);
 }
 
-function splitCommand(cmd: string) {
-  return cmd.split(/\s+/);
-}
-
 function instanceTestParser<T>(parse: (args: string[]) => T | string, command: string, expected: T | undefined) {
   if (expected === undefined) {
     assert.strictEqual(typeof parse(splitCommand(command)), 'string');
@@ -38,10 +34,10 @@ function instanceTestParser<T>(parse: (args: string[]) => T | string, command: s
 }
 
 function instanceTestHandler(botInstance: Bot, chatContext: ChatContext, command: string, expected: RegExp) {
-  const args = splitCommand(command);
-  let name = args[0].substring(1);
-  botInstance.onHandlerCalled(chatContext, args);
-  assert.match(botInstance.handlers[name].action(chatContext, args), expected);
+  const selected = selectHandler(botInstance, command);
+  assert.notStrictEqual(selected, undefined);
+  assert.notStrictEqual(selected.handler, undefined);
+  assert.match(callHandler(botInstance, selected.handler, chatContext, selected.args), expected);
 }
 
 function setBalance(userData: UserData<PerUserData>, userId: string, balance: number) {

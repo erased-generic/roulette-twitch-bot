@@ -63,16 +63,16 @@ class PredictionBot extends BotBase implements Bot {
   onHandlerCalled(context: ChatContext, args: string[]): void {}
 
   static parsePredictCommand(tokens: string[], all_places: number[]): PredictCommand | string {
-    let amount = parseInt(tokens[1]);
-    if (isNaN(amount) && tokens[1] !== "all") {
-      return "amount must be a number or 'all'";
-    }
-
     if (tokens.length < 3) {
       return "too few arguments";
     }
     if (tokens.length > 3) {
       return "too many arguments";
+    }
+
+    let amount = parseInt(tokens[1]);
+    if (isNaN(amount) && tokens[1] !== "all") {
+      return "amount must be a number or 'all'";
     }
 
     const parsed = BotBase.parseSpaceRange(tokens[2], all_places);
@@ -92,7 +92,7 @@ class PredictionBot extends BotBase implements Bot {
     }
     const predictCommand = PredictionBot.parsePredictCommand(args, this.all_places);
     if (typeof predictCommand === 'string') {
-      return `Parse error: ${predictCommand}, try !predict <points> <outcome>, ${context['username']}!`;
+      return `Parse error: ${predictCommand}, try %{format}, ${context['username']}!`;
     }
     const amount = this.bet(this.prediction, userId, predictCommand.amount, [predictCommand.predictNumber]);
     if (typeof amount === 'string') {

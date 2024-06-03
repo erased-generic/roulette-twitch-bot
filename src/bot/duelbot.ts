@@ -110,7 +110,7 @@ class DuelBot extends BotBase implements Bot {
   duelHandler(context: ChatContext, args: string[]): string | undefined {
     const duelCommand = DuelBot.parseDuelCommand(args);
     if (typeof duelCommand === 'string') {
-      return `Parse error: ${duelCommand}, try !duel <amount> <username>, ${context['username']}!`;
+      return `Parse error: ${duelCommand}, try %{format}, ${context['username']}!`;
     }
     const userId1 = context['user-id'];
     if (this.duels[userId1] instanceof DuelAccepted) {

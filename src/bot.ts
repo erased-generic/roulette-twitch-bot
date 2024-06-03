@@ -97,30 +97,30 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   console.log(`${context.username}: ${msg}`);
 
   msg = msg.trim();
-  if (msg.startsWith('!')) {
-    const cmd = msg.split(/\s+/);
-    const action = theBot.handlers[cmd[0].substring(1)];
-    if (action !== undefined) {
-      const userId = context['user-id'];
-      if (userId === undefined) {
-        client.say(target, `Sorry, I don't know who you are, ${context['username']}!`);
-        return;
-      }
-      let chatContext = {
-        ...context,
-        "user-id": userId,
-        mod: (context.mod === true) ||
-             (context.badges?.broadcaster !== undefined)
-      };
-      theBot.onHandlerCalled(chatContext, cmd)
-      const response = action.action(chatContext, cmd);
-      if (response !== undefined) {
-        client.say(target, response);
-      }
-      return;
-    }
+  const selected = interfaces.selectHandler(theBot, msg);
+  if (selected === undefined) {
+    return;
+  }
 
+  if (selected.handler === undefined) {
     console.log(`* ${context.username} Unknown command ${msg}`);
+    return;
+  }
+
+  const userId = context['user-id'];
+  if (userId === undefined) {
+    client.say(target, `Sorry, I don't know who you are, ${context['username']}!`);
+    return;
+  }
+  let chatContext = {
+    ...context,
+    "user-id": userId,
+    mod: (context.mod === true) ||
+          (context.badges?.broadcaster !== undefined)
+  };
+  const response = interfaces.callHandler(theBot, selected.handler, chatContext, selected.args);
+  if (response !== undefined) {
+    client.say(target, response);
   }
 }
 

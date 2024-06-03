@@ -8,13 +8,13 @@ class BalanceBot extends BotBase implements Bot {
   readonly handlers: { [key: string]: BotHandler } = {
     "claim": {
       action: this.claimHandler.bind(this),
-      description: "Claim 100 points with 30-minute cooldown",
+      description: "Claim 100 points with a 30-minute cooldown",
       format: ""
     },
     "claime": {
       action: this.claimeHandler.bind(this),
-      description: "Claim 100 points with 30-minute cooldown. If you're (un)lucky, doubles or halves your balance",
-      format: "[<chance in %>]=1"
+      description: "Claim 100 points with a 30-minute cooldown. If you're (un)lucky, doubles or halves your balance",
+      format: "[<chance of trickery in %>]=1"
     },
     "balance": {
       action: this.pointsHandler.bind(this),
@@ -109,7 +109,7 @@ class BalanceBot extends BotBase implements Bot {
     }
     const chance = parseFloat(args[1]);
     if (!isFinite(chance)) {
-      return `Parse error: ${args[1]}, try !claime <chance in %>, ${context['username']}!`;
+      return `Parse error: ${args[1]}, try %{format}, ${context['username']}!`;
     }
     return this.doClaim(context, chance);
   }
@@ -119,7 +119,7 @@ class BalanceBot extends BotBase implements Bot {
     if (args.length > 1) {
       boardSize = parseInt(args[1]);
       if (isNaN(boardSize)) {
-        return `Parse error: ${args[1]}, try !leaderboard [<size>], ${context['username']}!`;
+        return `Parse error: ${args[1]}, try %{format}, ${context['username']}!`;
       }
     }
     return `Top ${boardSize} richest people in our chat: ` + Object
