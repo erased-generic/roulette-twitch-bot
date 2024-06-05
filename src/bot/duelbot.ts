@@ -76,6 +76,11 @@ class DuelBot extends BotBase implements Bot {
       description: "View all ongoing blackjack duels and duel requests",
       format: ""
     },
+    "check": {
+      action: this.checkHandler.bind(this),
+      description: "View your current duel status",
+      format: ""
+    }
   };
 
   readonly duels: { [key: string]: DuelRendezvous } = {};
@@ -188,20 +193,41 @@ class DuelBot extends BotBase implements Bot {
     return `${context['username']} retracted all their duel requests`;
   }
 
-  private printDuelStatus(duel: DuelAccepted, result?: blackjackModule.GameResult): string {
-    if (result !== undefined) {
-      return this.processDuelResult(duel, result);
+  private printDuelStatus(duel: DuelAccepted, moreInfo: boolean, result?: blackjackModule.GameResult): string {
+    let msg = ``;
+    if (moreInfo) {
+      const players = [duel.userId1, duel.userId2];
+      for (const userId of players) {
+        msg +=
+          `${this.getUsername(userId)}'s hand: ${duel.blackjack.hands[userId].toString()}` +
+          `, totaling ${blackjackModule.BlackJack.getBalance(duel.blackjack.hands[userId])}. `;
+      }
     }
 
-    return `${this.getUsername(duel.blackjack.getCurrentPlayer())}, your move! Type !hit or !stand!`;
+    if (result !== undefined) {
+      return msg + this.processDuelResult(duel, result);
+    }
+
+    return msg + `${this.getUsername(duel.blackjack.getCurrentPlayer())}, your move! Type !hit or !stand!`;
+  }
+
+  checkHandler(context: ChatContext, args: string[]): string | undefined {
+    const userId = context['user-id'];
+    const duel = this.duels[userId];
+    if (duel instanceof DuelAccepted) {
+      return this.printDuelStatus(duel, true);
+    }
+    return `${context['username']}, you're not in a duel!`;
   }
 
   acceptHandler(context: ChatContext, args: string[]): string | undefined {
     const userId2 = context['user-id'];
     const username2 = context['username'];
     if (userId2 in this.duels && this.duels[userId2] instanceof DuelAccepted) {
-      // TODO: fix username
-      return `${username2}, you already have a duel in progress with ${this.duels[userId2].username2}!`;
+      const otherUsername = this.duels[userId2].username2 === username2
+        ? this.getUsername(this.duels[userId2].userId1)
+        : this.duels[userId2].username2;
+      return `${username2}, you already have a duel in progress with ${otherUsername}!`;
     }
 
     // Find our rendezvous
@@ -279,14 +305,7 @@ class DuelBot extends BotBase implements Bot {
       `${userId2} ${rendezvous.username2} with ${amount2}`);
 
     msg += `Let the blackjack duel begin! `;
-    // TODO: move this to another function and add a handler to print the hands
-    for (const userId of players) {
-      msg +=
-        `${this.getUsername(userId)}'s hand: ${accepted.blackjack.hands[userId].toString()}` +
-        `, totaling ${blackjackModule.BlackJack.getBalance(accepted.blackjack.hands[userId])}. `;
-    }
-
-    return msg + this.printDuelStatus(accepted, accepted.blackjack.init());
+    return msg + this.printDuelStatus(accepted, true, accepted.blackjack.init());
   }
 
   hitHandler(context: ChatContext, args: string[]): string | undefined {
@@ -309,7 +328,7 @@ class DuelBot extends BotBase implements Bot {
     }
     msg += `! `;
     console.log(`* hit: ${userId} ${username} - ${duel.blackjack.hands[userId].toString()} (${result.balance})`);
-    return msg + this.printDuelStatus(duel, result.result);
+    return msg + this.printDuelStatus(duel, false, result.result);
   }
 
   standHandler(context: ChatContext, args: string[]): string | undefined {
@@ -325,31 +344,31 @@ class DuelBot extends BotBase implements Bot {
     }
     const result = blackjack.stand();
     console.log(`* stand: ${userId} ${username} - ${duel.blackjack.hands[userId].toString()} (${result.balance})`);
-    return this.printDuelStatus(duel, result.result);
+    return `${username} stands with ${result.balance}. ` + this.printDuelStatus(duel, false, result.result);
   }
 
   rendezvousHandler(context: ChatContext, args: string[]): string | undefined {
     const userId = context['user-id'];
     const username = context['username'];
     let msg = `${username}, you are participating in: `;
-    let isFirst = true;
-    // TODO: don't print a duel twice
+    let metAccepted = false;
+    let msgs = [];
     for (const duel of Object.values(this.duels)) {
       if (duel.userId1 === userId || duel.username2 === username) {
-        if (isFirst) {
-          isFirst = false;
-        } else {
-          msg += ", ";
-        }
         if (duel instanceof DuelAccepted) {
-          msg += `an ongoing duel ${this.userData.get(duel.userId1).username} <-> ${duel.username2}`;
+          if (!metAccepted) {
+            msgs.push(`an ongoing duel ${this.userData.get(duel.userId1).username} <-> ${duel.username2}`);
+            metAccepted = true;
+          }
         } else {
-          msg += `a duel request ${this.userData.get(duel.userId1).username} -> ${duel.username2}`;
+          msgs.push(`a duel request ${this.userData.get(duel.userId1).username} -> ${duel.username2}`);
         }
       }
     }
-    if (isFirst) {
+    if (msgs.length === 0) {
       msg += "no blackjack duels or duel requests.";
+    } else {
+      msg += msgs.join(", ");
     }
     return msg;
   }

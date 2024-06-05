@@ -112,13 +112,16 @@ class Prediction extends RouletteBase {
 
     let rescaled = false;
     if (sum === 0) {
+      // amounts are 0 anyway, just make chances something that makes sense:
+      // as if each player bet 1 in total
       for (const playerId in this.bets) {
+        sum += 1;
         for (const i of this.bets[playerId].numbers) {
-          sum++;
-          bets[i]++;
+          bets[i] += 1 / this.bets[playerId].numbers.length;
         }
       }
     } else if (bets[this.lastNumber] === 0) {
+      // now we need to distinguish different 0-chance bets, rescale everything
       rescaled = true;
       let rescale = 0;
       for (const playerId in this.bets) {

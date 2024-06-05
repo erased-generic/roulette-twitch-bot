@@ -72,6 +72,26 @@ testHandler(
 );
 testHandler(
   aChatContext,
+  "!rendezvous",
+  /a, you are participating in: no blackjack duels or duel requests/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: no blackjack duels or duel requests/
+);
+testHandler(
+  aChatContext,
+  "!check",
+  /a, you're not in a duel/
+);
+testHandler(
+  bChatContext,
+  "!check",
+  /b, you're not in a duel/
+);
+testHandler(
+  aChatContext,
   "!duel 10 b",
   /b, reply with !accept \[a\] to accept the blackjack duel, if you're ready to bet 10 points!/
 );
@@ -79,6 +99,26 @@ testHandler(
   bChatContext,
   "!duel 10 a",
   /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: a duel request a -> b, a duel request b -> a$/
+);
+testHandler(
+  aChatContext,
+  "!rendezvous",
+  /a, you are participating in: a duel request a -> b, a duel request b -> a$/
+);
+testHandler(
+  aChatContext,
+  "!check",
+  /a, you're not in a duel/
+);
+testHandler(
+  bChatContext,
+  "!check",
+  /b, you're not in a duel/
 );
 testHandler(
   aChatContext,
@@ -194,6 +234,36 @@ testHandler(
   /Let the blackjack duel begin! b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
 );
 testHandler(
+  bChatContext,
+  "!accept",
+  /b, you already have a duel in progress with a/
+);
+testHandler(
+  aChatContext,
+  "!accept",
+  /a, you already have a duel in progress with b/
+);
+testHandler(
+  aChatContext,
+  "!rendezvous",
+  /a, you are participating in: an ongoing duel b <-> a$/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: an ongoing duel b <-> a$/
+);
+testHandler(
+  aChatContext,
+  "!check",
+  /b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+);
+testHandler(
+  bChatContext,
+  "!check",
+  /b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+);
+testHandler(
   aChatContext,
   "!balance",
   /You have 100 points \(currently betted 10 of those\), a!/
@@ -255,7 +325,16 @@ testHandler(
 );
 
 // test winning
-myDeck.cards = new Deck().cards;
+myDeck.cards = [
+  new Card(12, CardSuit.Club),
+  new Card(2, CardSuit.Diamond),
+
+  new Card(9, CardSuit.Heart),
+  new Card(9, CardSuit.Spade),
+
+  new Card(9, CardSuit.Club),
+  new Card(9, CardSuit.Diamond),
+];
 setBalanceNoReserved(userData, "a", 100);
 setBalanceNoReserved(userData, "b", 100);
 testHandler(
@@ -266,7 +345,7 @@ testHandler(
 testHandler(
   aChatContext,
   "!accept",
-  /Let the blackjack duel begin! b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+  /Let the blackjack duel begin! b's hand: 9♦,9♣, totaling 18. a's hand: 9♠,9♥, totaling 18. b, your move! Type !hit or !stand!/
 );
 testHandler(
   aChatContext,
@@ -280,13 +359,23 @@ testHandler(
 );
 testHandler(
   bChatContext,
+  "!hit",
+  /you pulled a 2♦, totaling 20! b, your move! Type !hit or !stand!/
+);
+testHandler(
+  bChatContext,
+  "!check",
+  /b's hand: 9♦,9♣,2♦, totaling 20. a's hand: 9♠,9♥, totaling 18. b, your move! Type !hit or !stand!/
+);
+testHandler(
+  bChatContext,
   "!stand",
-  /a, your move/
+  /b stands with 20. a, your move! Type !hit or !stand!/
 );
 testHandler(
   aChatContext,
   "!hit",
-  /Q♦, totaling 30 - you busted! The winner is b, b won 10 points and now has 110 points, a lost 10 points and now has 90 points/
+  /Q♣, totaling 28 - you busted! The winner is b, b won 10 points and now has 110 points, a lost 10 points and now has 90 points/
 );
 testHandler(
   aChatContext,
@@ -452,23 +541,83 @@ testHandler(
 );
 testHandler(
   aChatContext,
+  "!rendezvous",
+  /a, you are participating in: a duel request b -> a$/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: a duel request b -> a$/
+);
+testHandler(
+  cChatContext,
+  "!rendezvous",
+  /c, you are participating in: a duel request c -> d$/
+);
+testHandler(
+  dChatContext,
+  "!rendezvous",
+  /d, you are participating in: a duel request c -> d$/
+);
+testHandler(
+  aChatContext,
   "!accept",
   new RegExp(
     "Let the blackjack duel begin! " +
-    "a's hand: 10♦,10♣, totaling 20\\. " +
     "b's hand: 10♠,10♥, totaling 20\\. " +
+    "a's hand: 10♦,10♣, totaling 20\\. " +
     "a, your move! Type !hit or !stand!"
   )
+);
+testHandler(
+  aChatContext,
+  "!rendezvous",
+  /a, you are participating in: an ongoing duel b <-> a$/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: an ongoing duel b <-> a$/
+);
+testHandler(
+  cChatContext,
+  "!rendezvous",
+  /c, you are participating in: a duel request c -> d$/
+);
+testHandler(
+  dChatContext,
+  "!rendezvous",
+  /d, you are participating in: a duel request c -> d$/
 );
 testHandler(
   dChatContext,
   "!accept",
   new RegExp(
     "Let the blackjack duel begin! " +
-    "d's hand: 9♠,9♥, totaling 18\\. " +
     "c's hand: 8♦,8♣, totaling 16\\. " +
+    "d's hand: 9♠,9♥, totaling 18\\. " +
     "d, your move! Type !hit or !stand!"
   )
+);
+testHandler(
+  aChatContext,
+  "!rendezvous",
+  /a, you are participating in: an ongoing duel b <-> a$/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: an ongoing duel b <-> a$/
+);
+testHandler(
+  cChatContext,
+  "!rendezvous",
+  /c, you are participating in: an ongoing duel c <-> d$/
+);
+testHandler(
+  dChatContext,
+  "!rendezvous",
+  /d, you are participating in: an ongoing duel c <-> d$/
 );
 testHandler(
   aChatContext,
@@ -490,9 +639,49 @@ testHandler(
   )
 );
 testHandler(
+  aChatContext,
+  "!rendezvous",
+  /a, you are participating in: no/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: no/
+);
+testHandler(
+  cChatContext,
+  "!rendezvous",
+  /c, you are participating in: an ongoing duel c <-> d$/
+);
+testHandler(
+  dChatContext,
+  "!rendezvous",
+  /d, you are participating in: an ongoing duel c <-> d$/
+);
+testHandler(
   cChatContext,
   "!stand",
   /The winner is d, c lost 20 points and now has 80 points, d won 20 points and now has 120 points/
+);
+testHandler(
+  aChatContext,
+  "!rendezvous",
+  /a, you are participating in: no/
+);
+testHandler(
+  bChatContext,
+  "!rendezvous",
+  /b, you are participating in: no/
+);
+testHandler(
+  cChatContext,
+  "!rendezvous",
+  /c, you are participating in: no/
+);
+testHandler(
+  dChatContext,
+  "!rendezvous",
+  /d, you are participating in: no/
 );
 testHandler(
   aChatContext,

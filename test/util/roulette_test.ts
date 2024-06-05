@@ -117,7 +117,7 @@ testRouletteBase(new Roulette(37), {
   player2: { didWin: false, chance: 1 / (5 + 1 / 6 + 1), amount: 10, payout: -10 }
 });
 
-// Test predictions
+// Test predictions: normal cases
 testRouletteBase(new Prediction(2),
   { player1: { amount: 10, numbers: [1] } }, 1,
   { player1: { didWin: true, chance: 1, amount: 10, payout: 0 } });
@@ -168,14 +168,53 @@ testRouletteBase(new Prediction(4), {
   player4: { didWin: false, chance: 53 / 119, amount: 50, payout: -50 },                // -50
   player5: { didWin: true, chance: 1, amount: 9, payout: -3 - 3 + 3 * (119 / 13 - 1) } // 18.462
 });
+
+// Test prediction: edge cases with 0 bets
+// test chance rescale from 0 (controversial)
+testRouletteBase(new Prediction(5), {
+  player1: { amount: 0, numbers: [1] },
+  player2: { amount: 0, numbers: [1, 2] },
+  player3: { amount: 0, numbers: [2] },
+  player4: { amount: 0, numbers: [3] },
+  player5: { amount: 100, numbers: [4] }
+}, 1, {
+  player1: { didWin: true, chance: 3 / 2 * 1 / 100, amount: 0, payout: 100 * 2 / 3 }, // get more weight
+  player2: { didWin: true, chance: Infinity, amount: 0, payout: 100 * 1 / 3 },        // voted 2 -> less weight
+  player3: { didWin: false, chance: Infinity, amount: 0, payout: 0 },
+  player4: { didWin: false, chance: Infinity, amount: 0, payout: 0 },
+  player5: { didWin: false, chance: Infinity, amount: 100, payout: -100 }
+});
+// test no chance rescale, if the 0-bet didn't win
 testRouletteBase(new Prediction(4), {
   player1: { amount: 0, numbers: [1] },
   player2: { amount: 0, numbers: [1, 2] },
   player3: { amount: 50, numbers: [2] },
   player4: { amount: 50, numbers: [3] }
+}, 3, {
+  player1: { didWin: false, chance: 0, amount: 0, payout: 0 },
+  player2: { didWin: false, chance: 1/2, amount: 0, payout: 0 },
+  player3: { didWin: false, chance: 1/2, amount: 50, payout: -50 },
+  player4: { didWin: true, chance: 1/2, amount: 50, payout: 50 }
+});
+// test 0-sum: "rescale" chances, as if each player bet 1 in total
+testRouletteBase(new Prediction(4), {
+  player1: { amount: 0, numbers: [1] },
 }, 1, {
-  player1: { didWin: true, chance: 3 / 2 * 1 / 100, amount: 0, payout: 100 * 2 / 3 },
-  player2: { didWin: true, chance: Infinity, amount: 0, payout: 100 * 1 / 3 },
-  player3: { didWin: false, chance: Infinity, amount: 50, payout: -50 },
-  player4: { didWin: false, chance: Infinity, amount: 50, payout: -50 }
+  player1: { didWin: true, chance: 1, amount: 0, payout: 0 },
+});
+testRouletteBase(new Prediction(4), {
+  player1: { amount: 0, numbers: [1] },
+}, 2, {
+  player1: { didWin: false, chance: 1, amount: 0, payout: 0 },
+});
+testRouletteBase(new Prediction(4), {
+  player1: { amount: 0, numbers: [1] },
+  player2: { amount: 0, numbers: [1, 2] },
+  player3: { amount: 0, numbers: [2] },
+  player4: { amount: 0, numbers: [3] }
+}, 1, {
+  player1: { didWin: true, chance: 1/4+1/8, amount: 0, payout: 0 },
+  player2: { didWin: true, chance: 1/4+1/8+1/8+1/4, amount: 0, payout: 0 },
+  player3: { didWin: false, chance: 1/8+1/4, amount: 0, payout: 0 },
+  player4: { didWin: false, chance: 1/4, amount: 0, payout: 0 }
 });
