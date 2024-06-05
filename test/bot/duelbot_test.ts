@@ -231,7 +231,7 @@ testHandler(
 testHandler(
   aChatContext,
   "!accept",
-  /Let the blackjack duel begin! b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+  /Let the blackjack duel begin!.* b's hand: K♦,K♠, totaling 20\. a's hand: K♣,K♥, totaling 20\. b, your move! Type !hit or !stand!/
 );
 testHandler(
   bChatContext,
@@ -256,12 +256,12 @@ testHandler(
 testHandler(
   aChatContext,
   "!check",
-  /b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+  /b's hand: K♦,K♠, totaling 20\. a's hand: K♣,K♥, totaling 20\. b, your move! Type !hit or !stand!/
 );
 testHandler(
   bChatContext,
   "!check",
-  /b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+  /b's hand: K♦,K♠, totaling 20\. a's hand: K♣,K♥, totaling 20\. b, your move! Type !hit or !stand!/
 );
 testHandler(
   aChatContext,
@@ -345,7 +345,7 @@ testHandler(
 testHandler(
   aChatContext,
   "!accept",
-  /Let the blackjack duel begin! b's hand: 9♦,9♣, totaling 18. a's hand: 9♠,9♥, totaling 18. b, your move! Type !hit or !stand!/
+  /Let the blackjack duel begin!.* b's hand: 9♦,9♣, totaling 18\. a's hand: 9♠,9♥, totaling 18\. b, your move! Type !hit or !stand!/
 );
 testHandler(
   aChatContext,
@@ -365,12 +365,12 @@ testHandler(
 testHandler(
   bChatContext,
   "!check",
-  /b's hand: 9♦,9♣,2♦, totaling 20. a's hand: 9♠,9♥, totaling 18. b, your move! Type !hit or !stand!/
+  /b's hand: 9♦,9♣,2♦, totaling 20\. a's hand: 9♠,9♥, totaling 18\. b, your move! Type !hit or !stand!/
 );
 testHandler(
   bChatContext,
   "!stand",
-  /b stands with 20. a, your move! Type !hit or !stand!/
+  /b stands with 20\. a, your move! Type !hit or !stand!/
 );
 testHandler(
   aChatContext,
@@ -407,8 +407,8 @@ testHandler(
   aChatContext,
   "!accept",
   new RegExp(
-    "Let the blackjack duel begin! " +
-    "b's hand: 10♥,A♥, totaling 21\\. a's hand: 9♦,9♣, totaling 18\\. " +
+    "Let the blackjack duel begin!.* " +
+    "b's hand: 10♥,A♥, totaling 21\. a's hand: 9♦,9♣, totaling 18\. " +
     "The winner is b, b won 10 points and now has 110 points, a lost 10 points and now has 90 points"
   )
 );
@@ -435,7 +435,7 @@ testHandler(
 testHandler(
   aChatContext,
   "!accept",
-  /Let the blackjack duel begin! b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+  /Let the blackjack duel begin!.* b's hand: K♦,K♠, totaling 20\. a's hand: K♣,K♥, totaling 20\. b, your move! Type !hit or !stand!/
 );
 testHandler(
   aChatContext,
@@ -563,9 +563,9 @@ testHandler(
   aChatContext,
   "!accept",
   new RegExp(
-    "Let the blackjack duel begin! " +
-    "b's hand: 10♠,10♥, totaling 20\\. " +
-    "a's hand: 10♦,10♣, totaling 20\\. " +
+    "Let the blackjack duel begin!.* " +
+    "b's hand: 10♠,10♥, totaling 20\. " +
+    "a's hand: 10♦,10♣, totaling 20\. " +
     "a, your move! Type !hit or !stand!"
   )
 );
@@ -593,9 +593,9 @@ testHandler(
   dChatContext,
   "!accept",
   new RegExp(
-    "Let the blackjack duel begin! " +
-    "c's hand: 8♦,8♣, totaling 16\\. " +
-    "d's hand: 9♠,9♥, totaling 18\\. " +
+    "Let the blackjack duel begin!.* " +
+    "c's hand: 8♦,8♣, totaling 16\. " +
+    "d's hand: 9♠,9♥, totaling 18\. " +
     "d, your move! Type !hit or !stand!"
   )
 );

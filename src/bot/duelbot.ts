@@ -304,7 +304,8 @@ class DuelBot extends BotBase implements Bot {
     console.log(`* duel: ${accepted.userId1} ${this.getUsername(accepted.userId1)} with ${accepted.amount} vs ` +
       `${userId2} ${rendezvous.username2} with ${amount2}`);
 
-    msg += `Let the blackjack duel begin! `;
+    msg += `Let the blackjack duel begin! If twitch blocks you from sending identical messages, ` +
+      `you can put random garbage at the end of the message, like "!hit 123". `;
     return msg + this.printDuelStatus(accepted, true, accepted.blackjack.init());
   }
 

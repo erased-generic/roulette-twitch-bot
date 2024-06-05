@@ -86,7 +86,7 @@ testHandler(
   modChatContext,
   "!outcome 1",
   new RegExp(
-    "Closing the prediction. Prediction resulted in outcome '1', " +
+    "Closing the prediction\\. Prediction resulted in outcome '1', " +
     "mod lost 50 points \\(coef 0\\.4x\\) and now has 50 points, " +
     "a won 50 points \\(coef 2\\.5x\\) and now has 150 points"
   )

@@ -104,7 +104,7 @@ testHandler(
 testHandler(
   modChatContext,
   "!outcome 1",
-  /Closing the prediction. Prediction resulted in outcome '1'/
+  /Closing the prediction\. Prediction resulted in outcome '1'/
 );
 testHandler(
   modChatContext,
@@ -217,7 +217,7 @@ testHandler(
   modChatContext,
   "!outcome 1",
   new RegExp(
-    "Closing the prediction. " +
+    "Closing the prediction\\. " +
     "Prediction resulted in outcome '1', " +
     "a won 50 points \\(coef 5x\\) and now has 150 points, " +
     "b lost 50 points \\(coef 0\\.2x\\) and now has 50 points"
@@ -266,7 +266,7 @@ testHandler(
   modChatContext,
   "!outcome 2",
   new RegExp(
-    "Closing the prediction. " +
+    "Closing the prediction\\. " +
     "Prediction resulted in outcome '2', " +
     "a lost 100 points \\(coef .*?\\) and now has 0 points, " +
     "b won 100 points \\(coef 99x\\) and now has 100 points"
