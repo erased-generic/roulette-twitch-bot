@@ -20,13 +20,13 @@ testHandler(
 // test claims
 testHandler(
   testChatContext,
-  "!claim",
+  "!claime",
   /claimed 100 points/
 );
 // assume that 30 minutes do not pass between these statements
 testHandler(
   testChatContext,
-  "!claim",
+  "!claime",
   /on cooldown/
 );
 for (let i = 0; i < 10; i++) {

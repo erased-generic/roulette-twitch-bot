@@ -8,13 +8,13 @@ class BalanceBot extends BotBase implements Bot {
   readonly handlers: { [key: string]: BotHandler } = {
     "claim": {
       action: this.claimHandler.bind(this),
-      description: "Claim 100 points with a 30-minute cooldown",
+      description: "Claim 100 points with a 30-minute cooldown. Has 1% chance of doubling or halving your balance",
       format: ""
     },
     "claime": {
       action: this.claimeHandler.bind(this),
       description: "Claim 100 points with a 30-minute cooldown. If you're (un)lucky, doubles or halves your balance",
-      format: "[<chance of trickery in %>]=1"
+      format: "[<chance of trickery in %>]=0"
     },
     "balance": {
       action: this.pointsHandler.bind(this),
@@ -100,18 +100,18 @@ class BalanceBot extends BotBase implements Bot {
   }
 
   claimHandler(context: ChatContext, args: string[]): string | undefined {
-    return this.doClaim(context, 0);
+    return this.doClaim(context, 0.01);
   }
 
   claimeHandler(context: ChatContext, args: string[]): string | undefined {
     if (args.length < 2) {
-      return this.doClaim(context, 0.01);
+      return this.doClaim(context, 0);
     }
     const chance = parseFloat(args[1]);
     if (!isFinite(chance)) {
       return `Parse error: ${args[1]}, try %{format}, ${context['username']}!`;
     }
-    return this.doClaim(context, chance);
+    return this.doClaim(context, chance / 100);
   }
 
   leaderboardHandler(context: ChatContext, args: string[]): string | undefined {

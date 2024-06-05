@@ -233,3 +233,52 @@ testHandler(
   "!balance",
   /You have 50 points,/
 );
+
+// test 0-point winning
+setBalanceNoReserved(userData, "a", 100);
+setBalanceNoReserved(userData, "b", 0);
+testHandler(
+  modChatContext,
+  "!open",
+  /An honorable mod has opened a prediction/
+);
+testHandler(
+  aChatContext,
+  "!predict 100 1",
+  /a predicted 1 with 100 points/
+);
+testHandler(
+  bChatContext,
+  "!predict all 2",
+  /b predicted 2 with 0 points/
+);
+testHandler(
+  aChatContext,
+  "!balance",
+  /You have 100 points \(currently betted 100 of those\),/
+);
+testHandler(
+  bChatContext,
+  "!balance",
+  /You have 0 points,/
+);
+testHandler(
+  modChatContext,
+  "!outcome 2",
+  new RegExp(
+    "Closing the prediction. " +
+    "Prediction resulted in outcome '2', " +
+    "a lost 100 points \\(coef .*?\\) and now has 0 points, " +
+    "b won 100 points \\(coef 99x\\) and now has 100 points"
+  )
+);
+testHandler(
+  aChatContext,
+  "!balance",
+  /You have 0 points,/
+);
+testHandler(
+  bChatContext,
+  "!balance",
+  /You have 100 points,/
+);

@@ -17,6 +17,7 @@ function testRouletteBase(instance: RouletteBase, bets: { [key: string]: Bet }, 
   instance.computeWinnings((playerId, didWin, chance, amount, payout) => {
     assert.strictEqual(playerId in expected, true);
     assert.strictEqual(didWin, expected[playerId].didWin);
+    assert.strictEqual(amount, expected[playerId].amount);
     if (!(Math.abs(chance - expected[playerId].chance) < 0.0001)) {
       assert.strictEqual(chance, expected[playerId].chance);
     }
@@ -166,4 +167,15 @@ testRouletteBase(new Prediction(4), {
   player3: { didWin: false, chance: 53 / 119, amount: 50, payout: -50 },                // -50
   player4: { didWin: false, chance: 53 / 119, amount: 50, payout: -50 },                // -50
   player5: { didWin: true, chance: 1, amount: 9, payout: -3 - 3 + 3 * (119 / 13 - 1) } // 18.462
+});
+testRouletteBase(new Prediction(4), {
+  player1: { amount: 0, numbers: [1] },
+  player2: { amount: 0, numbers: [1, 2] },
+  player3: { amount: 50, numbers: [2] },
+  player4: { amount: 50, numbers: [3] }
+}, 1, {
+  player1: { didWin: true, chance: 3 / 2 * 1 / 100, amount: 0, payout: 100 * 2 / 3 },
+  player2: { didWin: true, chance: Infinity, amount: 0, payout: 100 * 1 / 3 },
+  player3: { didWin: false, chance: Infinity, amount: 50, payout: -50 },
+  player4: { didWin: false, chance: Infinity, amount: 50, payout: -50 }
 });

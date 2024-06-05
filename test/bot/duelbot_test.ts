@@ -334,6 +334,46 @@ testHandler(
   /You have 110 points, b!/
 );
 
+// test winning with all-in 0 points
+myDeck.cards = new Deck().cards;
+setBalanceNoReserved(userData, "a", 0);
+setBalanceNoReserved(userData, "b", 100);
+testHandler(
+  bChatContext,
+  "!duel 10 a",
+  /a, reply with !accept \[b\] to accept the blackjack duel, if you're ready to bet 10 points!/
+);
+testHandler(
+  aChatContext,
+  "!accept",
+  /Let the blackjack duel begin! b's hand: K♦,K♠, totaling 20. a's hand: K♣,K♥, totaling 20. b, your move! Type !hit or !stand!/
+);
+testHandler(
+  aChatContext,
+  "!balance",
+  /You have 0 points, a!/
+);
+testHandler(
+  bChatContext,
+  "!balance",
+  /You have 100 points \(currently betted 10 of those\), b!/
+);
+testHandler(
+  bChatContext,
+  "!hit",
+  /Q♦, totaling 30 - you busted! The winner is a, b lost 10 points and now has 90 points, a won 10 points and now has 10 points/
+);
+testHandler(
+  aChatContext,
+  "!balance",
+  /You have 10 points, a!/
+);
+testHandler(
+  bChatContext,
+  "!balance",
+  /You have 90 points, b!/
+);
+
 // test two duels at once
 myDeck.cards = [
   new Card(8, CardSuit.Heart),

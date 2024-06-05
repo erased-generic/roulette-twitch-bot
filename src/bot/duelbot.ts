@@ -13,7 +13,7 @@ class DuelRendezvous {
 
   constructor(userId1: string, username2: string, amount: number) {
     this.userId1 = userId1;
-    this.username2 = username2;
+    this.username2 = formatUsername(username2);
     this.amount = amount;
   }
 }
@@ -29,6 +29,13 @@ class DuelAccepted extends DuelRendezvous {
     this.prediction = prediction;
     this.blackjack = blackjack;
   }
+}
+
+function formatUsername(input: string) {
+  if (input.startsWith('@')) {
+    input = input.substring(1);
+  }
+  return input.toLowerCase();
 }
 
 interface DuelCommand {
@@ -193,6 +200,7 @@ class DuelBot extends BotBase implements Bot {
     const userId2 = context['user-id'];
     const username2 = context['username'];
     if (userId2 in this.duels && this.duels[userId2] instanceof DuelAccepted) {
+      // TODO: fix username
       return `${username2}, you already have a duel in progress with ${this.duels[userId2].username2}!`;
     }
 
@@ -271,6 +279,7 @@ class DuelBot extends BotBase implements Bot {
       `${userId2} ${rendezvous.username2} with ${amount2}`);
 
     msg += `Let the blackjack duel begin! `;
+    // TODO: move this to another function and add a handler to print the hands
     for (const userId of players) {
       msg +=
         `${this.getUsername(userId)}'s hand: ${accepted.blackjack.hands[userId].toString()}` +
@@ -324,6 +333,7 @@ class DuelBot extends BotBase implements Bot {
     const username = context['username'];
     let msg = `${username}, you are participating in: `;
     let isFirst = true;
+    // TODO: don't print a duel twice
     for (const duel of Object.values(this.duels)) {
       if (duel.userId1 === userId || duel.username2 === username) {
         if (isFirst) {
