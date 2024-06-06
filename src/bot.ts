@@ -6,14 +6,6 @@ import * as duelBot from './bot/duelbot';
 import * as botBase from './bot/botbase';
 import * as userDataModule from './util/userdata';
 
-const userData = new userDataModule.FileUserData<botBase.PerUserData>(botBase.onReadUserData, "data/table.json");
-const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater([
-  u => new balanceBot.BalanceBot(u),
-  u => new rouletteBot.RouletteBot(u),
-  u => new predictionBot.PredictionBot(u, 100),
-  u => new duelBot.DuelBot(u),
-], userData);
-
 import * as fs from 'fs';
 import * as tmi from 'tmi.js';
 
@@ -29,6 +21,18 @@ interface AuthParams {
 }
 const authPath = "data/auth.json";
 const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+
+const userData = new userDataModule.FileUserData<botBase.PerUserData>(
+  botBase.onReadUserData,
+  auth.username,
+  "data/table.json",
+);
+const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater([
+  u => new balanceBot.BalanceBot(u),
+  u => new rouletteBot.RouletteBot(u),
+  u => new predictionBot.PredictionBot(u, 100),
+  u => new duelBot.DuelBot(u),
+], userData);
 
 function createTmiClient() {
   const opts = {

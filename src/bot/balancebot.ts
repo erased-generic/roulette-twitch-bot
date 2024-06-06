@@ -21,6 +21,11 @@ class BalanceBot extends BotBase implements Bot {
       description: "View your balance",
       format: ""
     },
+    "budget": {
+      action: this.budgetHandler.bind(this),
+      description: "View the bot's balance",
+      format: ""
+    },
     "leaderboard": {
       action: this.leaderboardHandler.bind(this),
       description: "View the leaderboard, sorted by the amount of points",
@@ -44,6 +49,17 @@ class BalanceBot extends BotBase implements Bot {
       msg += ` (currently betted ${info.reservedBalance} of those)`
     }
     return msg + `, ${context['username']}!`;
+  }
+
+  budgetHandler(context: ChatContext, args: string[]): string | undefined {
+    // Print the bot's points
+    const info = this.userData.get(this.userData.botUsername);
+
+    let msg = `The casino has ${info.balance} points`;
+    if (info.reservedBalance > 0) {
+      msg += ` (currently betted ${info.reservedBalance} of those)`
+    }
+    return msg;
   }
 
   doClaim(context: ChatContext, chance: number): string | undefined {
@@ -124,6 +140,7 @@ class BalanceBot extends BotBase implements Bot {
     }
     return `Top ${boardSize} richest people in our chat: ` + Object
       .entries(this.userData.getAll())
+      .filter(([id, data]) => id !== this.userData.botUsername)
       .map(([id, data]) => { return { username: data.username, balance: data.balance }; })
       .sort((a, b) => b.balance - a.balance)
       .slice(0, boardSize)

@@ -16,6 +16,12 @@ testHandler(
   "!balance",
   /You have 100 points/
 );
+setBalanceNoReserved(userData, userData.botUsername, 200);
+testHandler(
+  testChatContext,
+  "!budget",
+  /casino has 200 points/
+);
 
 // test claims
 testHandler(

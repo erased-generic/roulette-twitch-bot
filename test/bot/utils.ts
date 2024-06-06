@@ -15,7 +15,7 @@ import { MemoryUserData, UserData } from '../../src/util/userdata';
 import { BalanceBot } from '../../src/bot/balancebot';
 
 function createTestUserData() {
-  return new MemoryUserData<PerUserData>(onReadUserData, {});
+  return new MemoryUserData<PerUserData>(onReadUserData, "testbot", {});
 }
 
 function createTestBot(bots: ((userData: UserData<PerUserData>) => Bot)[], userData: UserData<PerUserData>) {
@@ -33,11 +33,13 @@ function instanceTestParser<T>(parse: (args: string[]) => T | string, command: s
   }
 }
 
-function instanceTestHandler(botInstance: Bot, chatContext: ChatContext, command: string, expected: RegExp) {
+function instanceTestHandler(botInstance: Bot, chatContext: ChatContext, command: string, expected: RegExp): string {
   const selected = selectHandler(botInstance, command);
   assert.notStrictEqual(selected, undefined);
   assert.notStrictEqual(selected.handler, undefined);
-  assert.match(callHandler(botInstance, selected.handler, chatContext, selected.args), expected);
+  const result = callHandler(botInstance, selected.handler, chatContext, selected.args);
+  assert.match(result, expected);
+  return result;
 }
 
 function setBalance(userData: UserData<PerUserData>, userId: string, balance: number) {

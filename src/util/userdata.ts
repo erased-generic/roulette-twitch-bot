@@ -1,16 +1,28 @@
-export { UserData, FileUserData, MemoryUserData };
+export { UserDatum, UserData, FileUserData, MemoryUserData };
 
 import * as fs from 'fs';
 
-abstract class UserData<T> {
-  readonly userData: { [key: string]: T } = {};
-  readonly onReadValue: (read: any) => T;
+interface UserDatum {
+  username?: string;
+}
 
-  constructor(onReadValue: (read: any) => T, readUserData: () => any) {
-    this.onReadValue = onReadValue;
+abstract class UserData<T extends UserDatum> {
+  readonly userData: { [key: string]: T } = {};
+  readonly onReadValue: (userId: string, read: any) => T;
+  readonly botUsername: string;
+
+  constructor(onReadValue: (userId: string, read: any) => T, readUserData: () => any, botUsername: string) {
+    this.onReadValue = (userId: string, read: any) => {
+      const transformed: UserDatum = {
+        username: (userId === botUsername ? botUsername : undefined),
+        ...read
+      };
+      return onReadValue(userId, transformed);
+    };
+    this.botUsername = botUsername;
     const parsedData = readUserData();
     for (const key in parsedData) {
-      const filledData = onReadValue(parsedData[key]);
+      const filledData = onReadValue(key, parsedData[key]);
       this.userData[key] = filledData;
     }
   }
@@ -25,7 +37,7 @@ abstract class UserData<T> {
   update(userId: string, updater: (inPlaceValue: T, hadKey: boolean) => void): T {
     let hadKey = true;
     if (!(userId in this.userData)) {
-      this.userData[userId] = this.onReadValue({});
+      this.userData[userId] = this.onReadValue(userId, {});
       hadKey = false;
     }
     const saved = this.userData[userId];
@@ -44,13 +56,13 @@ abstract class UserData<T> {
 class FileUserData<T> extends UserData<T> {
   readonly filePath: string;
 
-  constructor(onReadValue: (read: any) => T, filePath: string) {
+  constructor(onReadValue: (userId: string, read: any) => T, botUsername: string, filePath: string) {
     super(onReadValue, () => {
       if (fs.existsSync(filePath)) {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
       }
       return {};
-    });
+    }, botUsername);
     this.filePath = filePath;
   }
 
@@ -60,8 +72,8 @@ class FileUserData<T> extends UserData<T> {
 }
 
 class MemoryUserData<T> extends UserData<T> {
-  constructor(onReadValue: (read: any) => T, init: any) {
-    super(onReadValue, () => init);
+  constructor(onReadValue: (userId: string, read: any) => T, botUsername: string, init: any) {
+    super(onReadValue, () => init, botUsername);
   }
 
   writeUserData() {}

@@ -1,17 +1,16 @@
 export { PerUserData, onReadUserData, BotBase, UsernameUpdaterBot, composeBotsWithUsernameUpdater };
 
-import { UserData } from '../util/userdata';
+import { UserData, UserDatum } from '../util/userdata';
 import { Bot, ChatContext, composeBots } from '../util/interfaces';
 import { RouletteBase } from '../util/roulette';
 
-interface PerUserData {
-  username?: string;
+interface PerUserData extends UserDatum {
   balance: number;
   reservedBalance: number;
   lastClaim?: number;
 }
 
-function onReadUserData(read: any): PerUserData {
+function onReadUserData(userId: string, read: any): PerUserData {
   let defaultPerUserData: PerUserData = {
     username: undefined,
     balance: 100,
@@ -98,6 +97,7 @@ abstract class BotBase {
   }
 
   protected createWinningsCallback(message: (username: string | undefined, didWin: boolean, payout: number, percent: number, balance: number) => string) {
+    const botData = this.userData.get(this.userData.botUsername);
     return (playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => {
       let username: string | undefined;
       let balance: number = 0;
@@ -105,6 +105,7 @@ abstract class BotBase {
       this.userData.update(playerId, (inPlaceValue, hadKey) => {
         inPlaceValue.reservedBalance -= amount;
         balance = inPlaceValue.balance += payout;
+        botData.balance -= payout;
         username = inPlaceValue.username;
       });
       return message(username, didWin, payout, chance, balance);

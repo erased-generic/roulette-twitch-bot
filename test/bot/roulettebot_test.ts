@@ -1,6 +1,7 @@
 import { BetCommand, RouletteBot } from '../../src/bot/roulettebot';
 import { ChatContext } from '../../src/util/interfaces';
 import { createTestBot, createTestUserData, instanceTestHandler, instanceTestParser, setBalanceNoReserved } from './utils';
+import * as assert from 'assert';
 
 function parse(args: string[]) {
   return RouletteBot.parseBetCommand(["", ...args]);
@@ -245,7 +246,7 @@ const userData = createTestUserData();
 const instance = createTestBot([u => new RouletteBot(u)], userData);
 const testChatContext = { username: "test", 'user-id': "test", mod: false };
 
-function testHandler(context: ChatContext, command: string, expected: RegExp) {
+function testHandler(context: ChatContext, command: string, expected: RegExp): string {
   return instanceTestHandler(instance, context, command, expected);
 }
 
@@ -382,12 +383,13 @@ testHandler(
 );
 for (let i = 0; i < 10; i++) {
   setBalanceNoReserved(userData, "test", 100);
+  setBalanceNoReserved(userData, userData.botUsername, 0);
   testHandler(
     testChatContext,
     "!bet 50 odd",
     /placed a bet of 50 on odd/
   );
-  testHandler(
+  const msg = testHandler(
     testChatContext,
     "!roulette",
     new RegExp(
@@ -396,6 +398,19 @@ for (let i = 0; i < 10; i++) {
       '(\\d*[02468], test lost 50 points with a chance of \\d+% and now has 50 points)'
     )
   );
+  if (msg.match(/won 50/)) {
+    testHandler(
+      testChatContext,
+      "!budget",
+      /casino has -50 points/
+    );
+  } else {
+    testHandler(
+      testChatContext,
+      "!budget",
+      /casino has 50 points/
+    );
+  }
 }
 
 for (let i = 0; i < 10; i++) {
