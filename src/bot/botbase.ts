@@ -78,6 +78,7 @@ abstract class BotBase {
 
   protected reserveBalance(userId: string, amount: number) {
     this.userData.update(userId, (inPlaceValue, hadKey) => {
+      console.log(`* reserveBalance: ${userId}, ${inPlaceValue.username}, ${JSON.stringify(inPlaceValue)}, ${amount}`);
       inPlaceValue.reservedBalance += amount;
     });
   }
@@ -103,6 +104,7 @@ abstract class BotBase {
       let balance: number = 0;
       payout = Math.floor(payout);
       this.userData.update(playerId, (inPlaceValue, hadKey) => {
+        console.log(`* balance: ${playerId}, ${this.getUsername(playerId)}, ${JSON.stringify(inPlaceValue)}, ${amount}, ${payout}`);
         inPlaceValue.reservedBalance -= amount;
         balance = inPlaceValue.balance += payout;
         botData.balance -= payout;
@@ -134,6 +136,13 @@ abstract class BotBase {
       this.unbet(rouletteBase, userId);
     }
     rouletteBase.reset();
+  }
+
+  static appendMsg(msg1: string, msg2: string, sep: string = " ") {
+    if (msg1.length > 0 && !msg1.endsWith(sep) && msg2.length > 0) {
+      return msg1 + sep + msg2;
+    }
+    return msg1 + msg2;
   }
 }
 

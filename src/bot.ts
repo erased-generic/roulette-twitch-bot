@@ -2,7 +2,7 @@ import * as interfaces from './util/interfaces';
 import * as balanceBot from './bot/balancebot';
 import * as rouletteBot from './bot/roulettebot';
 import * as predictionBot from './bot/predictionbot';
-import * as duelBot from './bot/duelbot';
+import * as blackjackDuelBot from './bot/blackjackduelbot';
 import * as botBase from './bot/botbase';
 import * as userDataModule from './util/userdata';
 
@@ -31,7 +31,7 @@ const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater([
   u => new balanceBot.BalanceBot(u),
   u => new rouletteBot.RouletteBot(u),
   u => new predictionBot.PredictionBot(u, 100),
-  u => new duelBot.DuelBot(u),
+  u => new blackjackDuelBot.BlackJackDuelBot(u),
 ], userData);
 
 function createTmiClient() {

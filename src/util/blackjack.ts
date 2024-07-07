@@ -1,4 +1,5 @@
-export { CardSuit, Card, Deck, GameResult, Status, HitStatus, BlackJack };
+import { Game, GameBrain, GameContext, GameMoveResult, GameResult } from "./interfaces";
+export { CardSuit, Card, Deck, Moves, BlackJack, BlackJackBrain };
 
 enum CardSuit {
   Heart = "Heart",
@@ -80,20 +81,26 @@ class Deck {
   }
 }
 
-interface GameResult {
-  ranking: string[][];
+enum Moves {
+  Hit = "hit",
+  Stand = "stand",
 }
 
-interface Status {
+interface StandResult extends GameMoveResult {
   balance: number;
-  result?: GameResult;
 }
 
-interface HitStatus extends Status {
+interface HitResult extends GameMoveResult {
+  balance: number;
   card: Card;
 }
 
-class BlackJack {
+class BlackJack implements Game {
+  readonly moveHandlers = {
+    [Moves.Hit]: this.hit.bind(this),
+    [Moves.Stand]: this.stand.bind(this),
+  }
+
   deck: Deck = new Deck();
   hands: { [key: string]: Card[] } = {};
   players: string[] = [];
@@ -121,6 +128,10 @@ class BlackJack {
       balance += 10;
     }
     return balance;
+  }
+
+  getBalance(player: string): number {
+    return BlackJack.getBalance(this.hands[player]);
   }
 
   static getScore(hand: Card[]): number {
@@ -179,20 +190,71 @@ class BlackJack {
     }
   }
 
-  hit(): HitStatus {
+  getPlayers(): string[] {
+    return this.players;
+  }
+
+  getMoves(): string[] {
+    return Object.values(Moves);
+  }
+
+  hit(): HitResult {
     const player = this.getCurrentPlayer();
     const card = this.deck.pop();
     this.hands[player].push(card);
     const balance = BlackJack.getBalance(this.hands[player]);
-    let status: HitStatus = { result: undefined, card, balance };
-    if (!this.isPlaying(player)) {
-      status.result = this.selectNextPlayer();
+    return {
+      result: this.isPlaying(player) ? undefined : this.selectNextPlayer(),
+      balance,
+      card,
+      describe: (context: GameContext): string => {
+        const username = context.getUsername(player);
+        let msg = `${username} pulls a ${card.toString()}, totaling ${balance}`;
+        if (BlackJack.isBust(balance)) {
+          msg += ` - they busted`;
+        } else if (BlackJack.is21(balance)) {
+          msg += ` - they got 21`;
+        }
+        msg += `!`;
+        console.log(`* hit: ${player} ${username} - ${this.hands[player].toString()} (${balance})`);
+        return msg;
+      }
     }
-    return status;
   }
 
-  stand(): Status {
+  stand(): StandResult {
     const player = this.getCurrentPlayer();
-    return { result: this.selectNextPlayer(), balance: BlackJack.getBalance(this.hands[player]) };
+    const balance = BlackJack.getBalance(this.hands[player]);
+    return {
+      result: this.selectNextPlayer(),
+      balance,
+      describe: (context: GameContext): string => {
+        const username = context.getUsername(player);
+        console.log(`* stand: ${balance} ${username} - ${this.hands[player].toString()} (${balance})`);
+        return `${username} stands with ${balance}.`;
+      }
+    };
+  }
+}
+
+class BlackJackBrain implements GameBrain<BlackJack> {
+  requestGame(args: string[]): { args: string[]; } {
+    return { args: [] };
+  }
+
+  move(game: BlackJack): { move: string; args: string[]; } {
+    const deck = game.deck;
+    let busts = 0;
+    for (const card of deck.cards) {
+      busts +=
+        BlackJack.isBust(BlackJack.getBalance(game.hands[game.getCurrentPlayer()].concat([card]))) ? 1 : 0;
+    }
+    if (busts / deck.cards.length >= 0.5) {
+      // more likely to bust, stand
+      return { move: Moves.Stand, args: [] };
+    } else {
+      // more likely to not bust, hit
+      return { move: Moves.Hit, args: [] };
+    }
   }
 }

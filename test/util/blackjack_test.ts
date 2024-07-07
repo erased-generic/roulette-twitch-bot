@@ -1,9 +1,27 @@
 import { BlackJack, Deck, Card, CardSuit } from '../../src/util/blackjack';
 import * as assert from 'assert';
 
+class BlackJackTest extends BlackJack {
+  constructor(players: string[], deck: Deck) {
+    super(players, deck);
+  }
+
+  hit() {
+    const result = super.hit();
+    delete result.describe;
+    return result;
+  }
+
+  stand() {
+    const result = super.stand();
+    delete result.describe;
+    return result;
+  }
+}
+
 // Test general case
 {
-  let instance = new BlackJack(['player1', 'player2', 'player3', 'player4'], new Deck([
+  let instance = new BlackJackTest(['player1', 'player2', 'player3', 'player4'], new Deck([
     new Card(5, CardSuit.Spade),
     new Card(10, CardSuit.Spade),
     new Card(2, CardSuit.Spade),
@@ -42,7 +60,7 @@ import * as assert from 'assert';
 
 // Test duels
 {
-  let instance = new BlackJack(['player1', 'player2'], new Deck([
+  let instance = new BlackJackTest(['player1', 'player2'], new Deck([
     new Card(4, CardSuit.Spade),
 
     new Card(9, CardSuit.Spade),
@@ -64,7 +82,7 @@ import * as assert from 'assert';
 }
 
 {
-  let instance = new BlackJack(['player1', 'player2'], new Deck([
+  let instance = new BlackJackTest(['player1', 'player2'], new Deck([
     new Card(3, CardSuit.Spade),
 
     new Card(9, CardSuit.Spade),
@@ -86,7 +104,7 @@ import * as assert from 'assert';
 }
 
 {
-  let instance = new BlackJack(['player1', 'player2'], new Deck([
+  let instance = new BlackJackTest(['player1', 'player2'], new Deck([
     new Card(3, CardSuit.Spade),
 
     new Card(9, CardSuit.Spade),
@@ -113,7 +131,7 @@ import * as assert from 'assert';
 }
 
 {
-  let instance = new BlackJack(['player1', 'player2'], new Deck([
+  let instance = new BlackJackTest(['player1', 'player2'], new Deck([
     new Card(3, CardSuit.Spade),
 
     new Card(10, CardSuit.Spade),
@@ -140,7 +158,7 @@ import * as assert from 'assert';
 }
 
 {
-  let instance = new BlackJack(['player1', 'player2'], new Deck([
+  let instance = new BlackJackTest(['player1', 'player2'], new Deck([
     new Card(3, CardSuit.Spade),
 
     new Card(10, CardSuit.Spade),
@@ -154,7 +172,7 @@ import * as assert from 'assert';
 }
 
 {
-  let instance = new BlackJack(['player1', 'player2'], new Deck([
+  let instance = new BlackJackTest(['player1', 'player2'], new Deck([
     new Card(1, CardSuit.Heart),
     new Card(1, CardSuit.Spade),
 

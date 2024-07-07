@@ -1,14 +1,14 @@
-import { DuelBot } from '../../src/bot/duelbot';
 import { RouletteBot } from '../../src/bot/roulettebot';
 import { PredictionBot } from '../../src/bot/predictionbot';
 import { ChatContext } from '../../src/util/interfaces';
 import { createTestBot, createTestUserData, instanceTestHandler, setBalanceNoReserved } from './utils';
+import { BlackJackDuelBot } from '../../src/bot/blackjackduelbot';
 
 const userData = createTestUserData();
 let instance = createTestBot([
   u => new RouletteBot(u),
   u => new PredictionBot(u, 100),
-  u => new DuelBot(u)
+  u => new BlackJackDuelBot(u)
 ], userData);
 
 // Test the bot interactions

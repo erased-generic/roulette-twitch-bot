@@ -1,4 +1,17 @@
-export { ChatContext, BotHandler, Bot, splitCommand, selectHandler, callHandler, composeBots }
+export {
+  ChatContext,
+  BotHandler,
+  Bot,
+  splitCommand,
+  selectHandler,
+  callHandler,
+  composeBots,
+  GameResult,
+  GameContext,
+  GameMoveResult,
+  Game,
+  GameBrain
+};
 
 interface ChatContext {
   username?: string;
@@ -65,4 +78,30 @@ function composeBots(bots: Bot[]): Bot {
   };
 
   return bot;
+}
+
+interface GameResult {
+  ranking: string[][];
+}
+
+interface GameContext {
+  getUsername(playerId: string): string | undefined;
+}
+
+interface GameMoveResult {
+  result: GameResult | undefined;
+  describe(context: GameContext): string;
+}
+
+interface Game {
+  getPlayers(): string[];
+  getCurrentPlayer(): string;
+
+  init(): GameResult | undefined;
+  readonly moveHandlers: { [move: string]: (args: string[]) => GameMoveResult };
+}
+
+interface GameBrain<T extends Game> {
+  requestGame(args: string[]): { args: string[] } | undefined;
+  move(game: T): { move: string, args: string[] } | undefined;
 }
