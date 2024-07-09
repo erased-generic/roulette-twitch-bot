@@ -58,10 +58,14 @@ class FileUserData<T> extends UserData<T> {
 
   constructor(onReadValue: (userId: string, read: any) => T, botUsername: string, filePath: string) {
     super(onReadValue, () => {
-      if (fs.existsSync(filePath)) {
+      try {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } catch (e) {
+        if (e.code === 'ENOENT') {
+          return {};
+        }
+        throw e;
       }
-      return {};
     }, botUsername);
     this.filePath = filePath;
   }

@@ -5,16 +5,26 @@ import { Bot, BotHandler, ChatContext } from '../util/interfaces';
 import { BotBase, PerUserData } from './botbase';
 
 class BalanceBot extends BotBase implements Bot {
+  static readonly CLAIM_SIZE = 100;
+  static readonly CLAIM_COOLDOWN_MINUTES = 30;
+  static readonly CLAIM_TRICKERY_CHANCE_PERCENT = 1;
+  static readonly CLAIME_TRICKERY_CHANCE_PERCENT = 0;
+  static readonly DEFAULT_BOARD_SIZE = 3;
+
   readonly handlers: { [key: string]: BotHandler } = {
     "claim": {
       action: this.claimHandler.bind(this),
-      description: "Claim 100 points with a 30-minute cooldown. Has 1% chance of doubling or halving your balance",
+      description:
+        `Claim ${BalanceBot.CLAIM_SIZE} points with a ${BalanceBot.CLAIM_COOLDOWN_MINUTES}-minute cooldown. ` +
+        `Has a ${BalanceBot.CLAIM_TRICKERY_CHANCE_PERCENT}% chance of doubling or halving your balance`,
       format: ""
     },
     "claime": {
       action: this.claimeHandler.bind(this),
-      description: "Claim 100 points with a 30-minute cooldown. If you're (un)lucky, doubles or halves your balance",
-      format: "[<chance of trickery in %>]=0"
+      description:
+        `Claim ${BalanceBot.CLAIM_SIZE} points with a ${BalanceBot.CLAIM_COOLDOWN_MINUTES}-minute cooldown. ` +
+        `If you're (un)lucky, doubles or halves your balance`,
+      format: `[<chance of trickery in %>]=${BalanceBot.CLAIME_TRICKERY_CHANCE_PERCENT}`
     },
     "balance": {
       action: this.pointsHandler.bind(this),
@@ -29,7 +39,7 @@ class BalanceBot extends BotBase implements Bot {
     "leaderboard": {
       action: this.leaderboardHandler.bind(this),
       description: "View the leaderboard, sorted by the amount of points",
-      format: "[<number of entries to show>]"
+      format: `[<number of entries to show>]=${BalanceBot.DEFAULT_BOARD_SIZE}`
     },
   };
 
@@ -65,11 +75,11 @@ class BalanceBot extends BotBase implements Bot {
   doClaim(context: ChatContext, chance: number): string | undefined {
     // Claim 100 points per 30 minutes
     // If `Math.rand() < chance`, double or half your balance
-    const claimSize = 100;
+    const claimSize = BalanceBot.CLAIM_SIZE;
     const minute = 1000 * 60;
     const hour = minute * 60;
     const day = hour * 24;
-    const claimCooldown = 30 * minute;
+    const claimCooldown = BalanceBot.CLAIM_COOLDOWN_MINUTES * minute;
 
     const userId = context['user-id'];
 
@@ -116,12 +126,12 @@ class BalanceBot extends BotBase implements Bot {
   }
 
   claimHandler(context: ChatContext, args: string[]): string | undefined {
-    return this.doClaim(context, 0.01);
+    return this.doClaim(context, BalanceBot.CLAIM_TRICKERY_CHANCE_PERCENT / 100);
   }
 
   claimeHandler(context: ChatContext, args: string[]): string | undefined {
     if (args.length < 2) {
-      return this.doClaim(context, 0);
+      return this.doClaim(context, BalanceBot.CLAIME_TRICKERY_CHANCE_PERCENT / 100);
     }
     const chance = parseFloat(args[1]);
     if (!isFinite(chance)) {
@@ -131,7 +141,7 @@ class BalanceBot extends BotBase implements Bot {
   }
 
   leaderboardHandler(context: ChatContext, args: string[]): string | undefined {
-    let boardSize = 3;
+    let boardSize = BalanceBot.DEFAULT_BOARD_SIZE;
     if (args.length > 1) {
       boardSize = parseInt(args[1]);
       if (isNaN(boardSize)) {

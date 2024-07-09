@@ -97,20 +97,22 @@ abstract class BotBase {
     return amount;
   }
 
-  protected createWinningsCallback(message: (username: string | undefined, didWin: boolean, payout: number, percent: number, balance: number) => string) {
+  protected commitBalance(userId: string, reservedAmount: number, balanceAmount: number): number {
     const botData = this.userData.get(this.userData.botUsername);
+    return this.userData.update(userId, (inPlaceValue, hadKey) => {
+      console.log(`* balance: ${userId}, ${this.getUsername(userId)}, ${JSON.stringify(inPlaceValue)}, ${reservedAmount}, ${balanceAmount}`);
+      inPlaceValue.reservedBalance -= reservedAmount;
+      inPlaceValue.balance += balanceAmount;
+      // NOTE: direct update of UserData here
+      botData.balance -= balanceAmount;
+    }).balance;
+  }
+
+  protected createWinningsCallback(message: (username: string | undefined, didWin: boolean, payout: number, percent: number, balance: number) => string) {
     return (playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => {
-      let username: string | undefined;
-      let balance: number = 0;
       payout = Math.floor(payout);
-      this.userData.update(playerId, (inPlaceValue, hadKey) => {
-        console.log(`* balance: ${playerId}, ${this.getUsername(playerId)}, ${JSON.stringify(inPlaceValue)}, ${amount}, ${payout}`);
-        inPlaceValue.reservedBalance -= amount;
-        balance = inPlaceValue.balance += payout;
-        botData.balance -= payout;
-        username = inPlaceValue.username;
-      });
-      return message(username, didWin, payout, chance, balance);
+      const balance = this.commitBalance(playerId, amount, payout);
+      return message(this.getUsername(playerId), didWin, payout, chance, balance);
     }
   }
 
