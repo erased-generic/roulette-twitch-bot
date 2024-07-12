@@ -1,17 +1,38 @@
 export { DuelCommand, DuelAccepted, DuelBot };
 
-import * as rouletteModule from '../util/roulette';
-import { UserData } from '../util/userdata';
-import { ChatContext, Game, GameBrain, GameContext, GameResult } from '../util/interfaces';
-import { BotBase, PerUserData } from './botbase';
+import * as rouletteModule from "../util/roulette";
+import { UserData } from "../util/userdata";
+import {
+  ChatContext,
+  Game,
+  GameBrain,
+  GameContext,
+  GameResult,
+} from "../util/interfaces";
+import { BotBase, PerUserData } from "./botbase";
 
-class DuelRendezvous {
+class DuelInfo<T extends Game> {
+  lastResult?: GameResult;
+
+  constructor(lastResult: GameResult | undefined) {
+    this.lastResult = lastResult;
+  }
+}
+
+class DuelRendezvous<T extends Game> extends DuelInfo<T> {
   userId1: string;
   username2: string;
   amount: number;
   args: string[];
 
-  constructor(userId1: string, username2: string, amount: number, args: string[]) {
+  constructor(
+    leftover: DuelInfo<T> | undefined,
+    userId1: string,
+    username2: string,
+    amount: number,
+    args: string[]
+  ) {
+    super(leftover?.lastResult);
     this.userId1 = userId1;
     this.username2 = formatUsername(username2);
     this.amount = amount;
@@ -19,13 +40,24 @@ class DuelRendezvous {
   }
 }
 
-class DuelAccepted<T extends Game> extends DuelRendezvous {
+class DuelAccepted<T extends Game> extends DuelRendezvous<T> {
   userId2: string;
   prediction: rouletteModule.Prediction;
   payload: T;
 
-  constructor(userId1: string, username2: string, amount: number = 0, args: string[], userId2: string, prediction: rouletteModule.Prediction, payload: T) {
-    super(userId1, username2, amount, args);
+  constructor(
+    rendezvous: DuelRendezvous<T>,
+    userId2: string,
+    prediction: rouletteModule.Prediction,
+    payload: T
+  ) {
+    super(
+      rendezvous as DuelInfo<T>,
+      rendezvous.userId1,
+      rendezvous.username2,
+      rendezvous.amount,
+      rendezvous.args
+    );
     this.userId2 = userId2;
     this.prediction = prediction;
     this.payload = payload;
@@ -33,7 +65,7 @@ class DuelAccepted<T extends Game> extends DuelRendezvous {
 }
 
 function formatUsername(input: string) {
-  if (input.startsWith('@')) {
+  if (input.startsWith("@")) {
     input = input.substring(1);
   }
   return input.toLowerCase();
@@ -45,7 +77,7 @@ interface DuelCommand {
 }
 
 abstract class DuelBot<T extends Game> extends BotBase {
-  readonly duels: { [key: string]: DuelRendezvous } = {};
+  readonly duels: { [key: string]: DuelInfo<T> } = {};
   readonly playerShuffleChance: number;
   readonly duelDescription: string;
   readonly gameBrain: GameBrain<T>;
@@ -72,97 +104,173 @@ abstract class DuelBot<T extends Game> extends BotBase {
       return "too many arguments";
     }
     const amount = BotBase.parseAmount(args[1]);
-    if (typeof amount === 'string') {
+    if (typeof amount === "string") {
       return amount;
     }
     return { amount, username: args[2] };
   }
 
   duelHandler(context: ChatContext, args: string[]): string | undefined {
-    const username = context['username'];
+    const username = context["username"];
     const duelCommand = DuelBot.parseDuelCommand(args);
-    if (typeof duelCommand === 'string') {
+    if (typeof duelCommand === "string") {
       return `Parse error: ${duelCommand}, try %{format}, ${username}!`;
     }
-    const userId1 = context['user-id'];
-    if (this.duels[userId1] instanceof DuelAccepted) {
+    const userId1 = context["user-id"];
+    let oldInfo = this.duels[userId1];
+    if (oldInfo instanceof DuelAccepted) {
       return `Duel already in progress, ${username}!`;
     }
-    // reclaim old request's points (if any) when making the request
-    const amount = this.ensureBalance(userId1, duelCommand.amount, this.duels[userId1]?.amount);
-    if (typeof amount === 'string') {
+    let extraReserveLimit: number = 0;
+    if (oldInfo instanceof DuelRendezvous) {
+      // reclaim old request's points when making the request
+      extraReserveLimit = oldInfo.amount;
+    }
+    const amount = this.ensureBalance(
+      userId1,
+      duelCommand.amount,
+      extraReserveLimit
+    );
+    if (typeof amount === "string") {
       return amount;
     }
 
     const username2 = duelCommand.username;
-    const rendezvous = new DuelRendezvous(userId1, username2, amount, args);
-    console.log(`* rendezvous ${this.duelDescription}: ${userId1} ${this.getUsername(userId1)}, ${username2}, ${amount}`);
+    const rendezvous = new DuelRendezvous<T>(
+      oldInfo,
+      userId1,
+      username2,
+      amount,
+      args
+    );
+    console.log(
+      `* rendezvous ${this.duelDescription}: ${userId1} ${this.getUsername(
+        userId1
+      )}, ${username2}, ${amount}`
+    );
     if (username2 === this.userData.botUsername) {
       if (this.gameBrain === undefined) {
-        return `Sorry, ${username}, I don't know how to play.`
+        return `Sorry, ${username}, I don't know how to play.`;
       }
       if (this.userData.botUsername in this.duels) {
         const duel = this.duels[this.userData.botUsername];
-        const otherUsername = duel.username2 === this.userData.botUsername
-          ? this.getUsername(duel.userId1)
-          : duel.username2;
-        return `${username}, I'm already playing with ${otherUsername}...`;
+        if (duel instanceof DuelAccepted) {
+          const otherUsername =
+            duel.username2 === this.userData.botUsername
+              ? this.getUsername(duel.userId1)
+              : duel.username2;
+          return `${username}, I'm already playing with ${otherUsername}...`;
+        }
       }
       const botResponse = this.gameBrain.requestGame(args);
       if (botResponse === undefined) {
         // bot rejects
-        return `${username}, I don't want to play with you.`
+        return `${username}, I don't want to play with you.`;
       } else {
         // bot accepts
         // NOTE: currently bot only has `DuelAccepted` instances in `this.duels`
         // NOTE: if bot could send the requests itself, we would need to reclaim bot's points
-        return "I accept! " + this.startDuel(rendezvous, rendezvous.amount, username2, botResponse.args);
+        return (
+          "I accept! " +
+          this.startDuel(
+            rendezvous,
+            rendezvous.amount,
+            username2,
+            botResponse.args
+          )
+        );
       }
     }
     this.duels[userId1] = rendezvous;
     return `${username2}, reply with !accept [${username}] to accept the ${this.duelDescription}, if you're ready to bet ${amount} points!`;
   }
 
-  private unrendezvous(duel: DuelRendezvous) {
-    console.log(`* unrendezvous ${this.duelDescription}: ${duel.userId1} ${this.getUsername(duel.userId1)}, ${duel.username2}, ${duel.amount}`);
+  private unrendezvous(duel: DuelRendezvous<T>) {
+    console.log(
+      `* unrendezvous ${this.duelDescription}: ${
+        duel.userId1
+      } ${this.getUsername(duel.userId1)}, ${duel.username2}, ${duel.amount}`
+    );
     this.reserveBalance(duel.userId1, -duel.amount);
     delete this.duels[duel.userId1];
   }
 
-  processDuelResult(duel: DuelAccepted<T>, result: GameResult) {
-    delete this.duels[duel.userId1];
-    delete this.duels[duel.userId2];
-
-    let msg = ``;
+  private matchDuelResult(result: GameResult, win: (winnerId: string, loserId: string) => void, tie: (player1: string, player2: string) => void) {
     if (result.ranking.length === 1) {
-      msg += `It's a tie! All points return to their respective owners.`;
-      this.unbetAll(duel.prediction);
-      console.log(`* tie ${this.duelDescription}: ${result.ranking[0][0]} ${this.getUsername(result.ranking[0][0])} vs ` +
-        `${result.ranking[0][1]} ${this.getUsername(result.ranking[0][1])}`);
-      return msg;
+      tie(result.ranking[0][0], result.ranking[0][1]);
     } else {
       const winnerId = result.ranking[0][0];
       const loserId = result.ranking[1][0];
-      msg += `The winner is ${this.getUsername(result.ranking[0][0])}`;
-      const callback = this.createWinningsCallback((username: string | undefined, didWin: boolean, delta: number, chance: number, balance: number) => {
-        if (username === this.userData.botUsername) {
-          // Bot's balance isn't final until all the callbacks are called, just don't print anything
-          return "";
-        }
-        if (didWin) {
-          return `${username} won ${delta} points and now has ${balance} points`;
-        } else {
-          return `${username} lost ${-delta} points and now has ${balance} points`;
-        }
-      });
-      duel.prediction.lastNumber = winnerId === duel.userId1 ? 0 : 1;
-      duel.prediction.computeWinnings((playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => {
-        console.log(`* ${this.duelDescription}: ${playerId}, ${this.getUsername(playerId)}, ${amount}, ${payout}`);
-        msg = BotBase.appendMsg(msg, callback(playerId, didWin, chance, amount, payout), ", ");
-      });
-      console.log(`* won: ${winnerId} ${this.getUsername(winnerId)} against ${loserId} ${this.getUsername(loserId)}`);
-      return msg;
+      win(winnerId, loserId);
     }
+  }
+
+  private processDuelResult(duel: DuelAccepted<T>, result: GameResult) {
+    this.duels[duel.userId2] = this.duels[duel.userId1] = new DuelInfo<T>(result);
+
+    let msg = ``;
+    this.matchDuelResult(
+      result,
+      (winnerId: string, loserId: string) => {
+        msg += `The winner is ${this.getUsername(result.ranking[0][0])}`;
+        const callback = this.createWinningsCallback(
+          (
+            username: string | undefined,
+            didWin: boolean,
+            delta: number,
+            chance: number,
+            balance: number
+          ) => {
+            if (username === this.userData.botUsername) {
+              // Bot's balance isn't final until all the callbacks are called, just don't print anything
+              return "";
+            }
+            if (didWin) {
+              return `${username} won ${delta} points and now has ${balance} points`;
+            } else {
+              return `${username} lost ${-delta} points and now has ${balance} points`;
+            }
+          }
+        );
+        duel.prediction.lastNumber = winnerId === duel.userId1 ? 0 : 1;
+        duel.prediction.computeWinnings(
+          (
+            playerId: string,
+            didWin: boolean,
+            chance: number,
+            amount: number,
+            payout: number
+          ) => {
+            console.log(
+              `* ${this.duelDescription}: ${playerId}, ${this.getUsername(
+                playerId
+              )}, ${amount}, ${payout}`
+            );
+            msg = BotBase.appendMsg(
+              msg,
+              callback(playerId, didWin, chance, amount, payout),
+              ", "
+            );
+          }
+        );
+        console.log(
+          `* won: ${winnerId} ${this.getUsername(
+            winnerId
+          )} against ${loserId} ${this.getUsername(loserId)}`
+        );
+      },
+      () => {
+        msg += `It's a tie! All points return to their respective owners.`;
+        this.unbetAll(duel.prediction);
+        console.log(
+          `* tie ${this.duelDescription}: ${
+            result.ranking[0][0]
+          } ${this.getUsername(result.ranking[0][0])} vs ` +
+            `${result.ranking[0][1]} ${this.getUsername(result.ranking[0][1])}`
+        );
+      }
+    );
+    return msg;
   }
 
   private resign(duel: DuelAccepted<T>, userId: string): string {
@@ -172,23 +280,36 @@ abstract class DuelBot<T extends Game> extends BotBase {
     }
     const username = this.getUsername(userId);
     console.log(`* forfeit ${this.duelDescription}: ${userId}, ${username}`);
-    return `${username} forfeits the ${this.duelDescription}. ` + this.processDuelResult(duel, { ranking });
+    return (
+      `${username} forfeits the ${this.duelDescription}. ` +
+      this.processDuelResult(duel, { ranking })
+    );
   }
 
   unduelHandler(context: ChatContext, args: string[]): string | undefined {
-    const userId = context['user-id'];
+    const userId = context["user-id"];
     const duel = this.duels[userId];
     if (duel instanceof DuelAccepted) {
       return this.resign(duel, userId);
-    } else if (duel !== undefined) {
+    } else if (duel instanceof DuelRendezvous) {
       this.unrendezvous(duel);
     }
-    return `${context['username']} retracted all their ${this.duelDescription} requests`;
+    return `${context["username"]} retracted all their ${this.duelDescription} requests`;
   }
 
-  protected abstract printDuelStatus(duel: DuelAccepted<T>, moreInfo: boolean): string;
-  protected abstract printDuelPrompt(duel: DuelAccepted<T>, moreInfo: boolean): string;
-  protected abstract printDuelResult(duel: DuelAccepted<T>, moreInfo: boolean, result: GameResult): string;
+  protected abstract printDuelStatus(
+    duel: DuelAccepted<T>,
+    moreInfo: boolean
+  ): string;
+  protected abstract printDuelPrompt(
+    duel: DuelAccepted<T>,
+    moreInfo: boolean
+  ): string;
+  protected abstract printDuelResult(
+    duel: DuelAccepted<T>,
+    moreInfo: boolean,
+    result: GameResult
+  ): string;
 
   protected getGameContext(): GameContext {
     return {
@@ -196,16 +317,28 @@ abstract class DuelBot<T extends Game> extends BotBase {
     };
   }
 
-  private printDuel(duel: DuelAccepted<T>, moreInfo: boolean, result?: GameResult): string {
+  private printDuel(
+    duel: DuelAccepted<T>,
+    moreInfo: boolean,
+    result?: GameResult
+  ): string {
     let msg = this.printDuelStatus(duel, moreInfo);
 
     if (result !== undefined) {
-      msg = BotBase.appendMsg(msg, this.printDuelResult(duel, moreInfo, result));
+      msg = BotBase.appendMsg(
+        msg,
+        this.printDuelResult(duel, moreInfo, result)
+      );
       msg = BotBase.appendMsg(msg, this.processDuelResult(duel, result));
       return msg;
     }
 
-    if (!(this.gameBrain !== undefined && duel.payload.getCurrentPlayer() === this.userData.botUsername)) {
+    if (
+      !(
+        this.gameBrain !== undefined &&
+        duel.payload.getCurrentPlayer() === this.userData.botUsername
+      )
+    ) {
       msg = BotBase.appendMsg(msg, this.printDuelPrompt(duel, moreInfo));
       return msg;
     }
@@ -214,28 +347,58 @@ abstract class DuelBot<T extends Game> extends BotBase {
     const move = this.gameBrain.move(duel.payload);
     if (move === undefined) {
       // resign
-      msg = BotBase.appendMsg(msg, this.resign(duel, this.userData.botUsername));
+      msg = BotBase.appendMsg(
+        msg,
+        this.resign(duel, this.userData.botUsername)
+      );
     } else {
       // make a move
       const newResult = duel.payload.moveHandlers[move.move](move.args);
       msg = BotBase.appendMsg(msg, newResult.describe(this.getGameContext()));
-      msg = BotBase.appendMsg(msg, this.printDuel(duel, false, newResult.result));
+      msg = BotBase.appendMsg(
+        msg,
+        this.printDuel(duel, false, newResult.result)
+      );
     }
     return msg;
   }
 
   checkHandler(context: ChatContext, args: string[]): string | undefined {
-    const userId = context['user-id'];
+    const userId = context["user-id"];
     const duel = this.duels[userId];
     if (duel instanceof DuelAccepted) {
       return this.printDuel(duel, true);
+    } else if (duel?.lastResult !== undefined) {
+      let msg = `${context["username"]}, your last ${this.duelDescription} result was: `;
+      this.matchDuelResult(duel.lastResult,
+        (winnerId: string, loserId: string) => {
+          if (userId === winnerId) {
+            msg += `you won against ${this.getUsername(loserId)}`;
+          } else {
+            msg += `you lost to ${this.getUsername(winnerId)}`;
+          }
+        },
+        (player1: string, player2: string) => {
+          msg += `you tied with ${this.getUsername(player1 === userId ? player2 : player1)}`;
+        }
+      );
+      return msg;
     }
-    return `${context['username']}, you're not in a ${this.duelDescription}!`;
+    return `${context["username"]}, you're not in a ${this.duelDescription}!`;
   }
 
-  protected abstract createDuelPayload(players: string[], argsReq: string[], argsResp: string[]): T;
+  protected abstract createDuelPayload(
+    players: string[],
+    argsReq: string[],
+    argsResp: string[]
+  ): T;
 
-  private startDuel(rendezvous: DuelRendezvous, amount2: number, userId2: string, args: string[]): string {
+  private startDuel(
+    rendezvous: DuelRendezvous<T>,
+    amount2: number,
+    userId2: string,
+    args: string[]
+  ): string {
     let msg = "";
     this.reserveBalance(userId2, amount2);
     const prediction = new rouletteModule.Prediction(2);
@@ -254,10 +417,7 @@ abstract class DuelBot<T extends Game> extends BotBase {
       players.reverse();
     }
     const accepted = new DuelAccepted(
-      rendezvous.userId1,
-      rendezvous.username2,
-      rendezvous.amount,
-      rendezvous.args,
+      rendezvous,
       userId2,
       prediction,
       this.createDuelPayload(players, rendezvous.args, args)
@@ -268,41 +428,59 @@ abstract class DuelBot<T extends Game> extends BotBase {
     // this.duels[userId2] was checked in the precondition or cleared during the search
     // => no need to reclaim points
     this.duels[userId2] = accepted;
-    console.log(`* duel ${this.duelDescription}: ${accepted.userId1} ${this.getUsername(accepted.userId1)} with ${accepted.amount} vs ` +
-      `${userId2} ${rendezvous.username2} with ${amount2}`);
+    console.log(
+      `* duel ${this.duelDescription}: ${accepted.userId1} ${this.getUsername(
+        accepted.userId1
+      )} with ${accepted.amount} vs ` +
+        `${userId2} ${rendezvous.username2} with ${amount2}`
+    );
 
-    msg += `Let the ${this.duelDescription} begin, ${this.getUsername(players[0])} is first to play! ` +
+    msg +=
+      `Let the ${this.duelDescription} begin, ${this.getUsername(
+        players[0]
+      )} is first to play! ` +
       `If twitch blocks you from sending identical messages, ` +
       `you can put random garbage at the end of the message. `;
     return msg + this.printDuel(accepted, true, accepted.payload.init());
   }
 
-  private prepareRendezvous(username1: string | undefined, userId2: string): DuelRendezvous | string {
+  private prepareRendezvous(
+    username1: string | undefined,
+    userId2: string
+  ): DuelRendezvous<T> | string {
     const username2 = this.getUsername(userId2);
 
-    if (userId2 in this.duels && this.duels[userId2] instanceof DuelAccepted) {
-      const otherUsername = this.duels[userId2].username2 === username2
-        ? this.getUsername(this.duels[userId2].userId1)
-        : this.duels[userId2].username2;
-      return `${username2}, you already have a ${this.duelDescription} in progress with ${otherUsername}!`;
+    if (userId2 in this.duels) {
+      const duel = this.duels[userId2];
+      if (duel instanceof DuelAccepted) {
+        const otherUsername =
+          duel.username2 === username2
+            ? this.getUsername(duel.userId1)
+            : duel.username2;
+        return `${username2}, you already have a ${this.duelDescription} in progress with ${otherUsername}!`;
+      }
     }
 
     // Find our rendezvous
-    let rendezvous: DuelRendezvous | undefined;
+    let rendezvous: DuelRendezvous<T> | undefined;
     for (const duel of Object.values(this.duels)) {
-      const duelUsername1 = this.getUsername(duel.userId1);
-      if (!(duel instanceof DuelAccepted) &&
+      if (duel instanceof DuelRendezvous) {
+        const duelUsername1 = this.getUsername(duel.userId1);
+        if (
+          !(duel instanceof DuelAccepted) &&
           (username1 === undefined || duelUsername1 === username1) &&
-          duel.username2 === username2) {
-        // found!
-        if (rendezvous !== undefined) {
-          // ambiguous
-          return `${username2}, please specify your opponent!`;
+          duel.username2 === username2
+        ) {
+          // found!
+          if (rendezvous !== undefined) {
+            // ambiguous
+            return `${username2}, please specify your opponent!`;
+          }
+          rendezvous = duel;
+        } else if (duel.userId1 === userId2) {
+          // cancel our request and reclaim the points
+          this.unrendezvous(duel);
         }
-        rendezvous = duel;
-      } else if (duel.userId1 === userId2) {
-        // cancel our request and reclaim the points
-        this.unrendezvous(duel);
       }
     }
     if (rendezvous === undefined) {
@@ -323,11 +501,14 @@ abstract class DuelBot<T extends Game> extends BotBase {
   }
 
   acceptHandler(context: ChatContext, args: string[]): string | undefined {
-    const userId2 = context['user-id'];
-    const username2 = context['username'];
+    const userId2 = context["user-id"];
+    const username2 = context["username"];
 
-    const rendezvous = this.prepareRendezvous(args.length > 1 ? args[1] : undefined, userId2);
-    if (typeof rendezvous === 'string') {
+    const rendezvous = this.prepareRendezvous(
+      args.length > 1 ? args[1] : undefined,
+      userId2
+    );
+    if (typeof rendezvous === "string") {
       return rendezvous;
     }
 
@@ -340,12 +521,19 @@ abstract class DuelBot<T extends Game> extends BotBase {
       msg += `${username2} is going all-in with ${amount2} points! `;
     }
 
-    return BotBase.appendMsg(msg, this.startDuel(rendezvous, amount2, userId2, args));
+    return BotBase.appendMsg(
+      msg,
+      this.startDuel(rendezvous, amount2, userId2, args)
+    );
   }
 
-  moveHandler(move: string, context: ChatContext, args: string[]): string | undefined {
-    const userId = context['user-id'];
-    const username = context['username'];
+  moveHandler(
+    move: string,
+    context: ChatContext,
+    args: string[]
+  ): string | undefined {
+    const userId = context["user-id"];
+    const username = context["username"];
     const duel = this.duels[userId];
     if (!(duel instanceof DuelAccepted)) {
       return `${username}, you're not in a duel!`;
@@ -364,20 +552,30 @@ abstract class DuelBot<T extends Game> extends BotBase {
   }
 
   rendezvousHandler(context: ChatContext, args: string[]): string | undefined {
-    const userId = context['user-id'];
-    const username = context['username'];
+    const userId = context["user-id"];
+    const username = context["username"];
     let msg = `${username}, you are participating in: `;
     let metAccepted = false;
     let msgs = [];
     for (const duel of Object.values(this.duels)) {
-      if (duel.userId1 === userId || duel.username2 === username) {
-        if (duel instanceof DuelAccepted) {
-          if (!metAccepted) {
-            msgs.push(`an ongoing ${this.duelDescription} ${this.userData.get(duel.userId1).username} <-> ${duel.username2}`);
-            metAccepted = true;
+      if (duel instanceof DuelRendezvous) {
+        if (duel.userId1 === userId || duel.username2 === username) {
+          if (duel instanceof DuelAccepted) {
+            if (!metAccepted) {
+              msgs.push(
+                `an ongoing ${this.duelDescription} ${
+                  this.userData.get(duel.userId1).username
+                } <-> ${duel.username2}`
+              );
+              metAccepted = true;
+            }
+          } else {
+            msgs.push(
+              `a ${this.duelDescription} request ${
+                this.userData.get(duel.userId1).username
+              } -> ${duel.username2}`
+            );
           }
-        } else {
-          msgs.push(`a ${this.duelDescription} request ${this.userData.get(duel.userId1).username} -> ${duel.username2}`);
         }
       }
     }

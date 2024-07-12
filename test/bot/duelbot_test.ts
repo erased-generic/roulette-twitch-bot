@@ -390,6 +390,17 @@ testHandler(
   "!balance",
   /You have 100 points, b!/
 );
+testHandler(
+  aChatContext,
+  "!check",
+  /duel result was: you tied with b/
+);
+testHandler(
+  bChatContext,
+  "!check",
+  /duel result was: you tied with a/
+);
+
 
 // test winning
 myDeck.cards = [
@@ -454,6 +465,16 @@ testHandler(
   "!balance",
   /You have 110 points, b!/
 );
+testHandler(
+  aChatContext,
+  "!check",
+  /duel result was: you lost to b/
+);
+testHandler(
+  bChatContext,
+  "!check",
+  /duel result was: you won against a/
+);
 
 // test instant winning
 myDeck.cards = [
@@ -489,6 +510,17 @@ testHandler(
   "!balance",
   /You have 110 points, b!/
 );
+testHandler(
+  aChatContext,
+  "!check",
+  /duel result was: you lost to b/
+);
+testHandler(
+  bChatContext,
+  "!check",
+  /duel result was: you won against a/
+);
+
 
 // test winning with all-in 0 points
 myDeck.cards = new Deck().cards;

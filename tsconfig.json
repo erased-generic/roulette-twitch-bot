@@ -2,11 +2,11 @@
   "compilerOptions": {
     "module": "commonjs",
     "esModuleInterop": true,
-    "target": "es6",
+    "target": "es2017",
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist"
   },
-  "lib": ["ES2016,DOM"],
+  "lib": ["ES2017,DOM"],
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }
