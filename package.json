@@ -9,7 +9,7 @@
     "test": "npm run build && node dist/test/test.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@types/node": "^20.12.7",
     "@types/tmi.js": "^1.8.6",
