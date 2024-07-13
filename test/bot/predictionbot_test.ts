@@ -1,6 +1,6 @@
 import { PredictCommand, PredictionBot } from '../../src/bot/predictionbot';
 import { ChatContext } from '../../src/util/interfaces';
-import { createTestBot, createTestUserData, instanceTestHandler, instanceTestParser, setBalanceNoReserved } from './utils';
+import { createTestBot, createTestBotContext, createTestUserData, instanceTestHandler, instanceTestParser, setBalanceNoReserved } from './utils';
 
 function parse(instance: PredictionBot, args: string[]) {
   return PredictionBot.parsePredictCommand(["", ...args], instance.all_places);
@@ -10,11 +10,12 @@ function testParser(instance: PredictionBot, command: string, expected: PredictC
   return instanceTestParser(args => parse(instance, args), command, expected);
 }
 
-const userData = createTestUserData();
+const botContext = createTestBotContext();
+const userData = botContext.userData;
 let predict_instance: PredictionBot;
 const instance = createTestBot([
-  u => predict_instance = new PredictionBot(u, 100)
-], userData);
+  ctx => predict_instance = new PredictionBot(ctx, 100)
+], botContext);
 
 testParser(predict_instance, "100 0", {
   predictNumber: 0,

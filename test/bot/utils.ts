@@ -1,52 +1,93 @@
 export {
   instanceTestHandler,
   createTestUserData,
+  createTestBotContext,
   createTestBot,
   splitCommand,
   instanceTestParser,
   setBalanceNoReserved,
-  setBalance
+  setBalance,
 };
 
-import * as assert from 'assert';
-import { Bot, ChatContext, callHandler, selectHandler, splitCommand } from '../../src/util/interfaces';
-import { PerUserData, composeBotsWithUsernameUpdater, onReadUserData } from '../../src/bot/botbase';
-import { MemoryUserData, UserData } from '../../src/util/userdata';
-import { BalanceBot } from '../../src/bot/balancebot';
+import * as assert from "assert";
+import {
+  Bot,
+  ChatContext,
+  callHandler,
+  selectHandler,
+  splitCommand,
+} from "../../src/util/interfaces";
+import {
+  BotBaseContext,
+  PerUserData,
+  composeBotsWithUsernameUpdater,
+  onReadUserData,
+} from "../../src/bot/botbase";
+import { MemoryUserData, UserData } from "../../src/util/userdata";
+import { BalanceBot } from "../../src/bot/balancebot";
 
 function createTestUserData() {
-  return new MemoryUserData<PerUserData>(onReadUserData, "testbot", {});
+  return new MemoryUserData<PerUserData>(onReadUserData, {});
 }
 
-function createTestBot(bots: ((userData: UserData<PerUserData>) => Bot)[], userData: UserData<PerUserData>) {
-  return composeBotsWithUsernameUpdater([
-    u => new BalanceBot(u),
-    ...bots
-  ], userData);
+function createTestBotContext() {
+  return new BotBaseContext("!", "testbot", createTestUserData());
 }
 
-function instanceTestParser<T>(parse: (args: string[]) => T | string, command: string, expected: T | undefined) {
+function createTestBot(
+  bots: ((botContext: BotBaseContext) => Bot)[],
+  botContext: BotBaseContext
+) {
+  return composeBotsWithUsernameUpdater(
+    [(ctx) => new BalanceBot(ctx), ...bots],
+    botContext
+  );
+}
+
+function instanceTestParser<T>(
+  parse: (args: string[]) => T | string,
+  command: string,
+  expected: T | undefined
+) {
   if (expected === undefined) {
-    assert.strictEqual(typeof parse(splitCommand(command)), 'string');
+    assert.strictEqual(typeof parse(splitCommand(command)), "string");
   } else {
     assert.deepStrictEqual(parse(splitCommand(command)), expected);
   }
 }
 
-function instanceTestHandler(botInstance: Bot, chatContext: ChatContext, command: string, expected: RegExp): string {
+function instanceTestHandler(
+  botInstance: Bot,
+  chatContext: ChatContext,
+  command: string,
+  expected: RegExp
+): string {
   const selected = selectHandler(botInstance, command);
   assert.notStrictEqual(selected, undefined);
   assert.notStrictEqual(selected.handler, undefined);
-  const result = callHandler(botInstance, selected.handler, chatContext, selected.args);
+  const result = callHandler(
+    botInstance,
+    selected.handler,
+    chatContext,
+    selected.args
+  );
   assert.match(result, expected);
   return result;
 }
 
-function setBalance(userData: UserData<PerUserData>, userId: string, balance: number) {
+function setBalance(
+  userData: UserData<PerUserData>,
+  userId: string,
+  balance: number
+) {
   userData.get(userId).balance = balance;
 }
 
-function setBalanceNoReserved(userData: UserData<PerUserData>, userId: string, balance: number) {
+function setBalanceNoReserved(
+  userData: UserData<PerUserData>,
+  userId: string,
+  balance: number
+) {
   userData.get(userId).balance = balance;
   assert.strictEqual(userData.get(userId).reservedBalance, 0);
 }

@@ -9,17 +9,9 @@ interface UserDatum {
 abstract class UserData<T extends UserDatum> {
   readonly userData: { [key: string]: T } = {};
   readonly onReadValue: (userId: string, read: any) => T;
-  readonly botUsername: string;
 
-  constructor(onReadValue: (userId: string, read: any) => T, readUserData: () => any, botUsername: string) {
-    this.onReadValue = (userId: string, read: any) => {
-      const transformed: UserDatum = {
-        username: (userId === botUsername ? botUsername : undefined),
-        ...read
-      };
-      return onReadValue(userId, transformed);
-    };
-    this.botUsername = botUsername;
+  constructor(onReadValue: (userId: string, read: any) => T, readUserData: () => any) {
+    this.onReadValue = onReadValue;
     const parsedData = readUserData();
     for (const key in parsedData) {
       const filledData = onReadValue(key, parsedData[key]);
@@ -56,7 +48,7 @@ abstract class UserData<T extends UserDatum> {
 class FileUserData<T> extends UserData<T> {
   readonly filePath: string;
 
-  constructor(onReadValue: (userId: string, read: any) => T, botUsername: string, filePath: string) {
+  constructor(onReadValue: (userId: string, read: any) => T, filePath: string) {
     super(onReadValue, () => {
       try {
         return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -66,7 +58,7 @@ class FileUserData<T> extends UserData<T> {
         }
         throw e;
       }
-    }, botUsername);
+    });
     this.filePath = filePath;
   }
 
@@ -76,8 +68,8 @@ class FileUserData<T> extends UserData<T> {
 }
 
 class MemoryUserData<T> extends UserData<T> {
-  constructor(onReadValue: (userId: string, read: any) => T, botUsername: string, init: any) {
-    super(onReadValue, () => init, botUsername);
+  constructor(onReadValue: (userId: string, read: any) => T, init: any) {
+    super(onReadValue, () => init);
   }
 
   writeUserData() {}

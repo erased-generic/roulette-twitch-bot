@@ -25,16 +25,16 @@ const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, 'utf8'));
 
 const userData = new userDataModule.FileUserData<botBase.PerUserData>(
   botBase.onReadUserData,
-  auth.username,
   "data/table.json",
 );
+const botContext = new botBase.BotBaseContext("!", auth.username, userData);
 const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater([
-  u => new balanceBot.BalanceBot(u),
-  u => new rouletteBot.RouletteBot(u),
-  u => new predictionBot.PredictionBot(u, 100),
-  u => new blackjackDuelBot.BlackJackDuelBot(u),
-  u => new funFactsBot.FunFactsBot(u, "data/funfacts.json"),
-], userData);
+  ctx => new balanceBot.BalanceBot(ctx),
+  ctx => new rouletteBot.RouletteBot(ctx),
+  ctx => new predictionBot.PredictionBot(ctx, 100),
+  ctx => new blackjackDuelBot.BlackJackDuelBot(ctx),
+  ctx => new funFactsBot.FunFactsBot(ctx, "data/funfacts.json"),
+], botContext);
 
 function createTmiClient() {
   const opts = {
@@ -126,7 +126,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   };
   const response = interfaces.callHandler(theBot, selected.handler, chatContext, selected.args);
   if (response !== undefined) {
-    client.say(target, response);
+    client.say(target, response.replace('\n', ' '));
   }
 }
 

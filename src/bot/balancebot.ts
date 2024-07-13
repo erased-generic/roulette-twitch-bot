@@ -1,8 +1,8 @@
 export { BalanceBot };
 
-import { UserData } from '../util/userdata';
-import { Bot, BotHandler, ChatContext } from '../util/interfaces';
-import { BotBase, PerUserData } from './botbase';
+import { UserData } from "../util/userdata";
+import { Bot, BotContext, BotHandler, ChatContext } from "../util/interfaces";
+import { BotBase, BotBaseContext, PerUserData } from "./botbase";
 
 class BalanceBot extends BotBase implements Bot {
   static readonly CLAIM_SIZE = 100;
@@ -12,62 +12,62 @@ class BalanceBot extends BotBase implements Bot {
   static readonly DEFAULT_BOARD_SIZE = 3;
 
   readonly handlers: { [key: string]: BotHandler } = {
-    "claim": {
+    claim: {
       action: this.claimHandler.bind(this),
       description:
         `Claim ${BalanceBot.CLAIM_SIZE} points with a ${BalanceBot.CLAIM_COOLDOWN_MINUTES}-minute cooldown. ` +
         `Has a ${BalanceBot.CLAIM_TRICKERY_CHANCE_PERCENT}% chance of doubling or halving your balance`,
-      format: ""
+      format: "",
     },
-    "claime": {
+    claime: {
       action: this.claimeHandler.bind(this),
       description:
         `Claim ${BalanceBot.CLAIM_SIZE} points with a ${BalanceBot.CLAIM_COOLDOWN_MINUTES}-minute cooldown. ` +
         `If you're (un)lucky, doubles or halves your balance`,
-      format: `[<chance of trickery in %>]=${BalanceBot.CLAIME_TRICKERY_CHANCE_PERCENT}`
+      format: `[<chance of trickery in %>]=${BalanceBot.CLAIME_TRICKERY_CHANCE_PERCENT}`,
     },
-    "balance": {
+    balance: {
       action: this.pointsHandler.bind(this),
       description: "View your balance",
-      format: ""
+      format: "",
     },
-    "budget": {
+    budget: {
       action: this.budgetHandler.bind(this),
       description: "View the bot's balance",
-      format: ""
+      format: "",
     },
-    "leaderboard": {
+    leaderboard: {
       action: this.leaderboardHandler.bind(this),
       description: "View the leaderboard, sorted by the amount of points",
-      format: `[<number of entries to show>]=${BalanceBot.DEFAULT_BOARD_SIZE}`
+      format: `[<number of entries to show>]=${BalanceBot.DEFAULT_BOARD_SIZE}`,
     },
   };
 
-  constructor(userData: UserData<PerUserData>) {
-    super(userData);
+  constructor(botContext: BotBaseContext) {
+    super(botContext);
   }
 
   onHandlerCalled(context: ChatContext, args: string[]): void {}
 
   pointsHandler(context: ChatContext, args: string[]): string | undefined {
     // Print the user's points
-    const userId = context['user-id'];
-    const info = this.userData.get(userId);
+    const userId = context["user-id"];
+    const info = this.botContext.userData.get(userId);
 
     let msg = `You have ${info.balance} points`;
     if (info.reservedBalance > 0) {
-      msg += ` (currently betted ${info.reservedBalance} of those)`
+      msg += ` (currently betted ${info.reservedBalance} of those)`;
     }
-    return msg + `, ${context['username']}!`;
+    return msg + `, ${context["username"]}!`;
   }
 
   budgetHandler(context: ChatContext, args: string[]): string | undefined {
     // Print the bot's points
-    const info = this.userData.get(this.userData.botUsername);
+    const info = this.botContext.userData.get(this.botContext.botUsername);
 
     let msg = `The casino has ${info.balance} points`;
     if (info.reservedBalance > 0) {
-      msg += ` (currently betted ${info.reservedBalance} of those)`
+      msg += ` (currently betted ${info.reservedBalance} of those)`;
     }
     return msg;
   }
@@ -81,14 +81,14 @@ class BalanceBot extends BotBase implements Bot {
     const day = hour * 24;
     const claimCooldown = BalanceBot.CLAIM_COOLDOWN_MINUTES * minute;
 
-    const userId = context['user-id'];
+    const userId = context["user-id"];
 
-    const lastClaim = this.userData.get(userId).lastClaim;
+    const lastClaim = this.botContext.userData.get(userId).lastClaim;
     const now = Date.now();
     if (lastClaim !== undefined) {
       const elapsed = now - lastClaim;
       if (elapsed < claimCooldown) {
-        let msg = `You are on cooldown, ${context['username']}! Please wait for `;
+        let msg = `You are on cooldown, ${context["username"]}! Please wait for `;
         const eta = claimCooldown - elapsed;
         if (eta < minute * 1.5) {
           msg += `a minute`;
@@ -106,36 +106,45 @@ class BalanceBot extends BotBase implements Bot {
     if (Math.random() < chance) {
       if (Math.random() < 0.5) {
         delta = Math.floor(balance / 2) - balance;
-        msg += `You halved your balance!`
+        msg += `You halved your balance!`;
       } else {
         delta = balance;
-        msg += `You doubled your balance!`
+        msg += `You doubled your balance!`;
       }
     }
-    this.userData.update(userId, (inPlaceValue, hadKey) => {
+    this.botContext.userData.update(userId, (inPlaceValue, hadKey) => {
       inPlaceValue.lastClaim = now;
       balance = inPlaceValue.balance += delta;
     });
     if (delta < claimSize) {
-      msg = "Unlucky! "+ msg;
+      msg = "Unlucky! " + msg;
     } else if (delta > claimSize) {
       msg = "Lucky! " + msg;
     }
     console.log(`* claim: ${userId}, ${context.username}, ${delta}`);
-    return msg + ` You claimed ${delta} points and now have ${balance} points, ${context['username']}!`;
+    return (
+      msg +
+      ` You claimed ${delta} points and now have ${balance} points, ${context["username"]}!`
+    );
   }
 
   claimHandler(context: ChatContext, args: string[]): string | undefined {
-    return this.doClaim(context, BalanceBot.CLAIM_TRICKERY_CHANCE_PERCENT / 100);
+    return this.doClaim(
+      context,
+      BalanceBot.CLAIM_TRICKERY_CHANCE_PERCENT / 100
+    );
   }
 
   claimeHandler(context: ChatContext, args: string[]): string | undefined {
     if (args.length < 2) {
-      return this.doClaim(context, BalanceBot.CLAIME_TRICKERY_CHANCE_PERCENT / 100);
+      return this.doClaim(
+        context,
+        BalanceBot.CLAIME_TRICKERY_CHANCE_PERCENT / 100
+      );
     }
     const chance = parseFloat(args[1]);
     if (!isFinite(chance)) {
-      return `Parse error: ${args[1]}, try %{format}, ${context['username']}!`;
+      return `Parse error: ${args[1]}, try %{format}, ${context["username"]}!`;
     }
     return this.doClaim(context, chance / 100);
   }
@@ -145,16 +154,21 @@ class BalanceBot extends BotBase implements Bot {
     if (args.length > 1) {
       boardSize = parseInt(args[1]);
       if (isNaN(boardSize)) {
-        return `Parse error: ${args[1]}, try %{format}, ${context['username']}!`;
+        return `Parse error: ${args[1]}, try %{format}, ${context["username"]}!`;
       }
     }
-    return `Top ${boardSize} richest people in our chat: ` + Object
-      .entries(this.userData.getAll())
-      .filter(([id, data]) => id !== this.userData.botUsername)
-      .map(([id, data]) => { return { username: data.username, balance: data.balance }; })
-      .sort((a, b) => b.balance - a.balance)
-      .slice(0, boardSize)
-      .map(a => `${a.username} with ${a.balance} points`)
-      .join(", ") + ".";
+    return (
+      `Top ${boardSize} richest people in our chat: ` +
+      Object.entries(this.botContext.userData.getAll())
+        .filter(([id, data]) => id !== this.botContext.botUsername)
+        .map(([id, data]) => {
+          return { username: data.username, balance: data.balance };
+        })
+        .sort((a, b) => b.balance - a.balance)
+        .slice(0, boardSize)
+        .map((a) => `${a.username} with ${a.balance} points`)
+        .join(";\n") +
+      "."
+    );
   }
 }

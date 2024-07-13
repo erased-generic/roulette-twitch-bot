@@ -1,8 +1,15 @@
-export { PerUserData, onReadUserData, BotBase, UsernameUpdaterBot, composeBotsWithUsernameUpdater };
+export {
+  PerUserData,
+  onReadUserData,
+  BotBase,
+  BotBaseContext,
+  UsernameUpdaterBot,
+  composeBotsWithUsernameUpdater,
+};
 
-import { UserData, UserDatum } from '../util/userdata';
-import { Bot, ChatContext, composeBots } from '../util/interfaces';
-import { RouletteBase } from '../util/roulette';
+import { UserData, UserDatum } from "../util/userdata";
+import { Bot, BotContext, ChatContext, composeBots } from "../util/interfaces";
+import { RouletteBase } from "../util/roulette";
 
 interface PerUserData extends UserDatum {
   balance: number;
@@ -15,7 +22,7 @@ function onReadUserData(userId: string, read: any): PerUserData {
     username: undefined,
     balance: 100,
     reservedBalance: 0,
-    lastClaim: undefined
+    lastClaim: undefined,
   };
 
   const result = { ...defaultPerUserData, ...read };
@@ -23,10 +30,36 @@ function onReadUserData(userId: string, read: any): PerUserData {
   return result;
 }
 
-abstract class BotBase {
-  readonly userData: UserData<PerUserData>;
-  constructor(userData: UserData<PerUserData>) {
+class BotBaseContext implements BotContext {
+  cmdMarker: string;
+  botUsername: string;
+  userData: UserData<PerUserData>;
+
+  constructor(
+    cmdMarker: string,
+    botUsername: string,
+    userData: UserData<PerUserData>
+  ) {
+    this.cmdMarker = cmdMarker;
+    this.botUsername = botUsername;
     this.userData = userData;
+  }
+}
+
+abstract class BotBase {
+  readonly botContext: BotBaseContext;
+  constructor(botContext: BotBaseContext) {
+    this.botContext = botContext;
+    botContext.userData.update(
+      botContext.botUsername,
+      (inPlaceValue: PerUserData) => {
+        inPlaceValue.username = botContext.botUsername;
+      }
+    );
+  }
+
+  getContext(): BotContext {
+    return this.botContext;
   }
 
   static parseSpaceRange(arg: string, all_places: number[]): number[] | string {
@@ -37,13 +70,16 @@ abstract class BotBase {
       }
       return [value];
     } else if (arg.match(/^\d+-\d+$/)) {
-      const args = arg.split('-');
+      const args = arg.split("-");
       const start = parseInt(args[0]);
       const end = parseInt(args[1]);
-      if (isNaN(start) || isNaN(end) ||
-          !all_places.includes(start) ||
-          !all_places.includes(end) ||
-          start > end) {
+      if (
+        isNaN(start) ||
+        isNaN(end) ||
+        !all_places.includes(start) ||
+        !all_places.includes(end) ||
+        start > end
+      ) {
         return `invalid space range '${arg}'`;
       }
       return Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -60,11 +96,12 @@ abstract class BotBase {
   }
 
   updateUsername(context: ChatContext) {
-    this.userData.get(context['user-id']).username = context.username;
+    this.botContext.userData.get(context["user-id"]).username =
+      context.username;
   }
 
   getUsername(userId: string) {
-    return this.userData.get(userId).username;
+    return this.botContext.userData.get(userId).username;
   }
 
   protected getBalanceInfo(info: PerUserData): number {
@@ -72,19 +109,27 @@ abstract class BotBase {
   }
 
   protected getBalance(userId: string): number {
-    const info = this.userData.get(userId);
+    const info = this.botContext.userData.get(userId);
     return this.getBalanceInfo(info);
   }
 
   protected reserveBalance(userId: string, amount: number) {
-    this.userData.update(userId, (inPlaceValue, hadKey) => {
-      console.log(`* reserveBalance: ${userId}, ${inPlaceValue.username}, ${JSON.stringify(inPlaceValue)}, ${amount}`);
+    this.botContext.userData.update(userId, (inPlaceValue, hadKey) => {
+      console.log(
+        `* reserveBalance: ${userId}, ${
+          inPlaceValue.username
+        }, ${JSON.stringify(inPlaceValue)}, ${amount}`
+      );
       inPlaceValue.reservedBalance += amount;
     });
   }
 
-  protected ensureBalance(userId: string, amount: number, extraReserveLimit?: number): number | string {
-    const info = this.userData.get(userId);
+  protected ensureBalance(
+    userId: string,
+    amount: number,
+    extraReserveLimit?: number
+  ): number | string {
+    const info = this.botContext.userData.get(userId);
     if (amount <= 0) {
       return `You can bet only a positive amount of points, ${info.username}!`;
     }
@@ -97,10 +142,18 @@ abstract class BotBase {
     return amount;
   }
 
-  protected commitBalance(userId: string, reservedAmount: number, balanceAmount: number): number {
-    const botData = this.userData.get(this.userData.botUsername);
-    return this.userData.update(userId, (inPlaceValue, hadKey) => {
-      console.log(`* balance: ${userId}, ${this.getUsername(userId)}, ${JSON.stringify(inPlaceValue)}, ${reservedAmount}, ${balanceAmount}`);
+  protected commitBalance(
+    userId: string,
+    reservedAmount: number,
+    balanceAmount: number
+  ): number {
+    const botData = this.botContext.userData.get(this.botContext.botUsername);
+    return this.botContext.userData.update(userId, (inPlaceValue, hadKey) => {
+      console.log(
+        `* balance: ${userId}, ${this.getUsername(userId)}, ${JSON.stringify(
+          inPlaceValue
+        )}, ${reservedAmount}, ${balanceAmount}`
+      );
       inPlaceValue.reservedBalance -= reservedAmount;
       inPlaceValue.balance += balanceAmount;
       // NOTE: direct update of UserData here
@@ -108,17 +161,46 @@ abstract class BotBase {
     }).balance;
   }
 
-  protected createWinningsCallback(message: (username: string | undefined, didWin: boolean, payout: number, percent: number, balance: number) => string) {
-    return (playerId: string, didWin: boolean, chance: number, amount: number, payout: number) => {
+  protected createWinningsCallback(
+    message: (
+      username: string | undefined,
+      didWin: boolean,
+      payout: number,
+      percent: number,
+      balance: number
+    ) => string
+  ) {
+    return (
+      playerId: string,
+      didWin: boolean,
+      chance: number,
+      amount: number,
+      payout: number
+    ) => {
       payout = Math.floor(payout);
       const balance = this.commitBalance(playerId, amount, payout);
-      return message(this.getUsername(playerId), didWin, payout, chance, balance);
-    }
+      return message(
+        this.getUsername(playerId),
+        didWin,
+        payout,
+        chance,
+        balance
+      );
+    };
   }
 
-  protected bet(rouletteBase: RouletteBase, userId: string, amount: number, numbers: number[]): number | string {
-    const ensured = this.ensureBalance(userId, amount, rouletteBase.getBet(userId));
-    if (typeof ensured === 'string') {
+  protected bet(
+    rouletteBase: RouletteBase,
+    userId: string,
+    amount: number,
+    numbers: number[]
+  ): number | string {
+    const ensured = this.ensureBalance(
+      userId,
+      amount,
+      rouletteBase.getBet(userId)
+    );
+    if (typeof ensured === "string") {
       return ensured;
     }
     rouletteBase.placeBet(userId, ensured, numbers);
@@ -151,8 +233,8 @@ abstract class BotBase {
 class UsernameUpdaterBot extends BotBase implements Bot {
   handlers: {};
 
-  constructor(userData: UserData<PerUserData>) {
-    super(userData);
+  constructor(botContext: BotBaseContext) {
+    super(botContext);
   }
 
   onHandlerCalled(context: ChatContext, args: string[]): void {
@@ -161,9 +243,12 @@ class UsernameUpdaterBot extends BotBase implements Bot {
 }
 
 function composeBotsWithUsernameUpdater(
-  botConstructors: ((userData: UserData<PerUserData>) => Bot)[],
-  userData: UserData<PerUserData>
+  botConstructors: ((botContext: BotBaseContext) => Bot)[],
+  botContext: BotBaseContext
 ): Bot {
-  const bots = [new UsernameUpdaterBot(userData), ...botConstructors.map(constructor => constructor(userData))];
+  const bots = [
+    new UsernameUpdaterBot(botContext),
+    ...botConstructors.map((constructor) => constructor(botContext)),
+  ];
   return composeBots(bots);
 }

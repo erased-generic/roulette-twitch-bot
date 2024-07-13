@@ -2,6 +2,7 @@ export {
   ChatContext,
   BotHandler,
   Bot,
+  BotContext,
   splitCommand,
   selectHandler,
   callHandler,
@@ -12,6 +13,8 @@ export {
   Game,
   GameBrain
 };
+
+import { UserData } from "./userdata";
 
 interface ChatContext {
   username?: string;
@@ -25,10 +28,16 @@ interface BotHandler {
   format: string;
 }
 
+interface BotContext {
+  cmdMarker: string;
+  botUsername: string;
+}
+
 interface Bot {
   readonly handlers: { [key: string]: BotHandler };
 
   onHandlerCalled(context: ChatContext, args: string[]): void;
+  getContext(): BotContext;
 }
 
 function splitCommand(command: string) {
@@ -36,11 +45,11 @@ function splitCommand(command: string) {
 }
 
 function selectHandler(bot: Bot, command: string): { handler?: BotHandler, key: string, args: string[] } | undefined {
-  if (!command.startsWith("!")) {
+  if (!command.startsWith(bot.getContext().cmdMarker)) {
     return undefined;
   }
   const args = splitCommand(command);
-  const key = args[0].substring(1);
+  const key = args[0].substring(bot.getContext().cmdMarker.length);
   return { handler: bot.handlers[key], key, args };
 }
 
@@ -74,7 +83,10 @@ function composeBots(bots: Bot[]): Bot {
       for (const bot of bots) {
         bot.onHandlerCalled(context, args);
       }
-    }
+    },
+    getContext() {
+      return bots[0].getContext();
+    },
   };
 
   return bot;
