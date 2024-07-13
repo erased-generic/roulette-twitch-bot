@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/src/bot.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b && copyfiles -u 2 \"roulette-base-bot/dist/**/*\" dist/ && copyfiles -s -u 2 \"roulette-base-bot/data/**/*\" data/",
     "start": "npm run build && node dist/src/bot.js",
     "test": "npm run build && node dist/test/test.js"
   },
@@ -13,6 +13,7 @@
   "dependencies": {
     "@types/node": "^20.12.7",
     "@types/tmi.js": "^1.8.6",
+    "copyfiles": "^2.4.1",
     "tmi.js": "^1.8.5",
     "typescript": "^5.4.5"
   }

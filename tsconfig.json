@@ -5,8 +5,13 @@
     "target": "es2017",
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "rootDirs": [".", "roulette-base-bot"],
+    "rootDir": ".",
   },
+  "references": [
+    { "path": "roulette-base-bot" }
+  ],
   "lib": ["ES2017,DOM"],
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

@@ -2,7 +2,7 @@ import * as interfaces from './util/interfaces';
 import * as balanceBot from './bot/balancebot';
 import * as rouletteBot from './bot/roulettebot';
 import * as predictionBot from './bot/predictionbot';
-import * as blackjackDuelBot from './bot/blackjackduelbot';
+import * as blackjackDuelBot from './bot/twitchblackjackduelbot';
 import * as funFactsBot from './bot/funfactsbot';
 import * as botBase from './bot/botbase';
 import * as userDataModule from './util/userdata';
@@ -32,7 +32,7 @@ const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater([
   ctx => new balanceBot.BalanceBot(ctx),
   ctx => new rouletteBot.RouletteBot(ctx),
   ctx => new predictionBot.PredictionBot(ctx, 100),
-  ctx => new blackjackDuelBot.BlackJackDuelBot(ctx),
+  ctx => new blackjackDuelBot.TwitchBlackJackDuelBot(ctx),
   ctx => new funFactsBot.FunFactsBot(ctx, "data/funfacts.json"),
 ], botContext);
 
