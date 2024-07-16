@@ -1,3 +1,6 @@
 [submodule "roulette-base-bot"]
 	path = roulette-base-bot
 	url = ../roulette-base-bot
+[submodule "tmi.js"]
+	path = tmi.js
+	url = ../tmi.js

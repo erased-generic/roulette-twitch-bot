@@ -8,7 +8,7 @@ import * as botBase from './bot/botbase';
 import * as userDataModule from './util/userdata';
 
 import * as fs from 'fs';
-import * as tmi from 'tmi.js';
+import tmi from 'tmi.js';
 
 // Define configuration options
 interface AuthParams {
@@ -51,7 +51,6 @@ function createTmiClient() {
   // Register our event handlers (defined below)
   client.on('chat', onChatHandler);
   client.on('connected', onConnectedHandler);
-
   return client;
 }
 
@@ -124,9 +123,29 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
     mod: (context.mod === true) ||
           (context.badges?.broadcaster !== undefined)
   };
-  const response = interfaces.callHandler(theBot, selected.handler, chatContext, selected.args);
+  let response = interfaces.callHandler(theBot, selected.handler, chatContext, selected.args);
   if (response !== undefined) {
-    client.say(target, response.replace('\n', ' '));
+    response = response.replace('\n', ' ');
+    console.log(`* say: ${response}`);
+    client.say(target, response)
+      .catch((reason: Error) => {
+        console.log(`Error sending message "${response}": ${reason.message}, retrying...`);
+        if (reason.message.includes("'msg_duplicate'")) {
+          setTimeout(() => {
+            console.log(`* re-say: ${response}`);
+            client.say(target, response).catch((reason: Error) => {
+              console.log(`Error re-sending message "${response}": ${reason.message}`);
+            })
+          }, 30_000);
+        } else if (reason.message.includes("'msg_ratelimit'")) {
+          setTimeout(() => {
+            console.log(`* re-say: ${response}`);
+            client.say(target, response).catch((reason: Error) => {
+              console.log(`Error re-sending message "${response}": ${reason.message}`);
+            })
+          }, 1_000);
+        }
+      });
   }
 }
 

@@ -14,7 +14,7 @@
     "@types/node": "^20.12.7",
     "@types/tmi.js": "^1.8.6",
     "copyfiles": "^2.4.1",
-    "tmi.js": "^1.8.5",
+    "tmi.js": "file:tmi.js",
     "typescript": "^5.4.5"
   }
 }
