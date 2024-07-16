@@ -99,18 +99,20 @@ client.connect()
 function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, self: boolean) {
   if (self) { return; } // Ignore messages from the bot
 
-  console.log(`${context.username}: ${msg}`);
-
   msg = msg.trim();
   const selected = interfaces.selectHandler(theBot, msg);
   if (selected === undefined) {
+    console.log(`${context.username}: [private]`);
     return;
   }
 
   if (selected.handler === undefined) {
+    console.log(`${context.username}: [private]`);
     console.log(`* ${context.username} Unknown command ${msg}`);
     return;
   }
+
+  console.log(`${context.username}: ${msg}`);
 
   const userId = context['user-id'];
   if (userId === undefined) {
