@@ -2,6 +2,7 @@ import * as interfaces from './util/interfaces';
 import * as balanceBot from './bot/balancebot';
 import * as rouletteBot from './bot/roulettebot';
 import * as predictionBot from './bot/predictionbot';
+import * as blackjack from './util/blackjack';
 import * as blackjackDuelBot from './bot/twitchblackjackduelbot';
 import * as funFactsBot from './bot/funfactsbot';
 import * as botBase from './bot/botbase';
@@ -28,13 +29,16 @@ const userData = new userDataModule.FileUserData<botBase.PerUserData>(
   "data/table.json",
 );
 const botContext = new botBase.BotBaseContext("!", auth.username, userData);
-const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater([
-  ctx => new balanceBot.BalanceBot(ctx),
-  ctx => new rouletteBot.RouletteBot(ctx),
-  ctx => new predictionBot.PredictionBot(ctx, 100),
-  ctx => new blackjackDuelBot.TwitchBlackJackDuelBot(ctx),
-  ctx => new funFactsBot.FunFactsBot(ctx, "data/funfacts.json"),
-], botContext);
+const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater(
+  [
+    (ctx) => new balanceBot.BalanceBot(ctx),
+    (ctx) => new rouletteBot.RouletteBot(ctx),
+    (ctx) => new predictionBot.PredictionBot(ctx, 100),
+    (ctx) => new blackjackDuelBot.TwitchBlackJackDuelBot(ctx),
+    (ctx) => new funFactsBot.FunFactsBot(ctx, "data/funfacts.json"),
+  ],
+  botContext
+);
 
 function createTmiClient() {
   const opts = {
