@@ -21,24 +21,36 @@ interface AuthParams {
   refresh_token: string;
   scope: string[];
 }
-const authPath = "data/auth.json";
+const authPath = "data/private/auth.json";
 const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, 'utf8'));
 
-const userData = new userDataModule.FileUserData<botBase.PerUserData>(
-  botBase.onReadUserData,
-  "data/table.json",
-);
-const botContext = new botBase.BotBaseContext("!", auth.username, userData);
-const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater(
-  [
-    (ctx) => new balanceBot.BalanceBot(ctx),
-    (ctx) => new rouletteBot.RouletteBot(ctx),
-    (ctx) => new predictionBot.PredictionBot(ctx, 100),
-    (ctx) => new blackjackDuelBot.TwitchBlackJackDuelBot(ctx),
-    (ctx) => new funFactsBot.FunFactsBot(ctx, "data/funfacts.json"),
-  ],
-  botContext
-);
+function createBot(channel: string): interfaces.Bot {
+  const userData = new userDataModule.FileUserData<botBase.PerUserData>(
+    botBase.onReadUserData,
+    `data/private/${channel}/table.json`,
+  );
+  const botContext = new botBase.BotBaseContext("!", auth.username, userData);
+  const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater(
+    [
+      (ctx) => new balanceBot.BalanceBot(ctx),
+      (ctx) => new rouletteBot.RouletteBot(ctx),
+      (ctx) => new predictionBot.PredictionBot(ctx, 100),
+      (ctx) => new blackjackDuelBot.TwitchBlackJackDuelBot(ctx),
+      (ctx) => new funFactsBot.FunFactsBot(ctx, "data/public/funfacts.json"),
+    ],
+    botContext
+  );
+
+  return theBot;
+}
+
+const theBots = {};
+function getOrCreateBot(channel: string): interfaces.Bot {
+  if (!theBots[channel]) {
+    theBots[channel] = createBot(channel);
+  }
+  return theBots[channel];
+}
 
 function createTmiClient() {
   const opts = {
@@ -99,9 +111,51 @@ client.connect()
     }
   });
 
+const MAX_MSG_LENGTH = 500;
+const ANY_MSG_COOLDOWN_MS = 3_000;
+const DUP_MSG_COOLDOWN_MS = 30_000;
+function say(target: string, msg: string) {
+  msg = msg.replace('\n', ' ');
+  if (msg.length > MAX_MSG_LENGTH) {
+    const message = msg;
+    let lastSpace = message.slice(0, MAX_MSG_LENGTH).lastIndexOf(' ');
+    if (lastSpace === -1) {
+      lastSpace = MAX_MSG_LENGTH;
+    }
+    msg = message.slice(0, lastSpace);
+
+    setTimeout(
+      () => say(target, message.slice(lastSpace)),
+      ANY_MSG_COOLDOWN_MS
+    );
+  }
+  console.log(`* say: ${msg}`);
+  client.say(target, msg)
+    .catch((reason: Error) => {
+      console.log(`Error sending message "${msg}": ${reason.message}, retrying...`);
+      if (reason.message.includes("'msg_duplicate'")) {
+        setTimeout(() => {
+          console.log(`* re-say: ${msg}`);
+          client.say(target, msg).catch((reason: Error) => {
+            console.log(`Error re-sending message "${msg}": ${reason.message}`);
+          })
+        }, DUP_MSG_COOLDOWN_MS);
+      } else if (reason.message.includes("'msg_ratelimit'")) {
+        setTimeout(() => {
+          console.log(`* re-say: ${msg}`);
+          client.say(target, msg).catch((reason: Error) => {
+            console.log(`Error re-sending message "${msg}": ${reason.message}`);
+          })
+        }, ANY_MSG_COOLDOWN_MS);
+      }
+    });
+}
+
 // Called every time a message comes in
 function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, self: boolean) {
   if (self) { return; } // Ignore messages from the bot
+
+  const theBot = getOrCreateBot(target);
 
   msg = msg.trim();
   const selected = interfaces.selectHandler(theBot, msg);
@@ -120,7 +174,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
 
   const userId = context['user-id'];
   if (userId === undefined) {
-    client.say(target, `Sorry, I don't know who you are, ${context['username']}!`);
+    say(target, `Sorry, I don't know who you are, ${context['username']}!`);
     return;
   }
   let chatContext = {
@@ -131,27 +185,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   };
   let response = interfaces.callHandler(theBot, selected.handler, chatContext, selected.args);
   if (response !== undefined) {
-    response = response.replace('\n', ' ');
-    console.log(`* say: ${response}`);
-    client.say(target, response)
-      .catch((reason: Error) => {
-        console.log(`Error sending message "${response}": ${reason.message}, retrying...`);
-        if (reason.message.includes("'msg_duplicate'")) {
-          setTimeout(() => {
-            console.log(`* re-say: ${response}`);
-            client.say(target, response).catch((reason: Error) => {
-              console.log(`Error re-sending message "${response}": ${reason.message}`);
-            })
-          }, 30_000);
-        } else if (reason.message.includes("'msg_ratelimit'")) {
-          setTimeout(() => {
-            console.log(`* re-say: ${response}`);
-            client.say(target, response).catch((reason: Error) => {
-              console.log(`Error re-sending message "${response}": ${reason.message}`);
-            })
-          }, 1_000);
-        }
-      });
+    say(target, response);
   }
 }
 
