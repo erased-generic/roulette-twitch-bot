@@ -2,7 +2,6 @@ import * as interfaces from './util/interfaces';
 import * as balanceBot from './bot/balancebot';
 import * as rouletteBot from './bot/roulettebot';
 import * as predictionBot from './bot/predictionbot';
-import * as blackjack from './util/blackjack';
 import * as blackjackDuelBot from './bot/twitchblackjackduelbot';
 import * as funFactsBot from './bot/funfactsbot';
 import * as botBase from './bot/botbase';
