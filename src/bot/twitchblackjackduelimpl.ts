@@ -1,13 +1,14 @@
 import * as blackjackModule from "../util/blackjack";
-import { DuelAccepted } from "./duelbot";
-import { BlackJackDuelBot } from './blackjackduelbot';
+import { DuelAccepted, DuelBot } from "./duelbot";
+import { BlackJackDuelImpl } from './blackjackduelimpl';
 
-export { TwitchBlackJackDuelBot };
+export { TwitchBlackJackDuelImpl };
 
-class TwitchBlackJackDuelBot
-  extends BlackJackDuelBot
+class TwitchBlackJackDuelImpl
+  extends BlackJackDuelImpl
 {
-  protected override printDuelIntro(
+  override printDuelIntro(
+    bot: DuelBot,
     duel: DuelAccepted<blackjackModule.BlackJack>
   ): string {
     return (

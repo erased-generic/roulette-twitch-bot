@@ -1,4 +1,6 @@
-import { TwitchBlackJackDuelBot } from "../../src/bot/twitchblackjackduelbot";
+import { DuelBot } from "../../src/bot/duelbot";
+import { TwitchBlackJackDuelImpl } from "../../src/bot/twitchblackjackduelimpl";
+
 import {
   ChatContext,
 } from "../../src/util/interfaces";
@@ -18,7 +20,10 @@ const userData = botContext.userData;
 const myDeck = new Deck();
 const instance = createTestBot(
   [
-    ctx => new TwitchBlackJackDuelBot(ctx, 0, () => myDeck),
+    (ctx) =>
+      new DuelBot(ctx, 0, {
+        bj: new TwitchBlackJackDuelImpl(() => myDeck),
+      }),
   ],
   botContext
 );
