@@ -129,12 +129,14 @@ function say(target: string, msg: string) {
     }
     msg = message.slice(0, lastSpace);
 
-    setTimeout(
-      () => say(target, message.slice(lastSpace)),
-      ANY_MSG_COOLDOWN_MS
-    );
+    let futureMsg = message.slice(lastSpace + 1);
+    console.log(`* delay say: ${futureMsg}[${futureMsg.length}]`);
+    setTimeout(() => say(target, futureMsg), ANY_MSG_COOLDOWN_MS);
   }
-  console.log(`* say: ${msg}`);
+  console.log(`* say: ${msg}[${msg.length}]`);
+  if (msg.length === 0) {
+    return;
+  }
   client.say(target, msg)
     .catch((reason: Error) => {
       console.log(`Error sending message "${msg}": ${reason.message}, retrying...`);
