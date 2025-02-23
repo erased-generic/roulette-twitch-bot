@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "name": "roulette-twitch-bot",
+      "script": "dist/src/bot.js",
+      "instances": 1,
+      "watch": false,
+      "autorestart": false,
+      "time": true
+    }
+  ]
+}
