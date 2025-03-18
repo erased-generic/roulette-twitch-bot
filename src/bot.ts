@@ -6,6 +6,7 @@ import * as duelBot from './bot/duelbot';
 import * as blackjackDuelImpl from './bot/twitchblackjackduelimpl';
 import * as anagramsDuelImpl from './bot/anagramsduelimpl';
 import * as funFactsBot from './bot/funfactsbot';
+import * as miscBot from './bot/miscbot';
 import * as botBase from './bot/botbase';
 import * as userDataModule from './util/userdata';
 
@@ -42,6 +43,7 @@ function createBot(channel: string): interfaces.Bot {
           anagrams: new anagramsDuelImpl.AnagramsDuelImpl("data/public/anagrams.json"),
         }),
       (ctx) => new funFactsBot.FunFactsBot(ctx, "data/public/funfacts.json"),
+      (ctx) => new miscBot.MiscBot(ctx)
     ],
     botContext
   );
