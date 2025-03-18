@@ -189,6 +189,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   let chatContext = {
     ...context,
     "user-id": userId,
+    "sent-at": parseInt(context['tmi-sent-ts'], 10),
     mod: (context.mod === true) ||
           (context.badges?.broadcaster !== undefined)
   };
