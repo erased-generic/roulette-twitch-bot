@@ -26,11 +26,10 @@ interface AuthParams {
 const authPath = "data/private/auth.json";
 const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, 'utf8'));
 
-function createBot(channel: string): interfaces.Bot {
-  const userData = new userDataModule.FileUserData<botBase.PerUserData>(
-    botBase.onReadUserData,
-    `data/private/${channel}/table.json`,
-  );
+function createBot(
+  channel: string,
+  userData: userDataModule.UserData<botBase.PerUserData>
+): interfaces.Bot {
   const botContext = new botBase.BotBaseContext("!", auth.username, userData);
   const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater(
     [
@@ -40,10 +39,12 @@ function createBot(channel: string): interfaces.Bot {
       (ctx) =>
         new duelBot.DuelBot(ctx, 0.5, {
           bj: new blackjackDuelImpl.TwitchBlackJackDuelImpl(),
-          anagrams: new anagramsDuelImpl.AnagramsDuelImpl("data/public/anagrams.json"),
+          anagrams: new anagramsDuelImpl.AnagramsDuelImpl(
+            "data/public/anagrams.json"
+          ),
         }),
       (ctx) => new funFactsBot.FunFactsBot(ctx, "data/public/funfacts.json"),
-      (ctx) => new miscBot.MiscBot(ctx)
+      (ctx) => new miscBot.MiscBot(ctx),
     ],
     botContext
   );
@@ -51,13 +52,7 @@ function createBot(channel: string): interfaces.Bot {
   return theBot;
 }
 
-const theBots = {};
-function getOrCreateBot(channel: string): interfaces.Bot {
-  if (!theBots[channel]) {
-    theBots[channel] = createBot(channel);
-  }
-  return theBots[channel];
-}
+const botManager = new botBase.BotManager(createBot, botBase.createFileUserData);
 
 function createTmiClient() {
   const opts = {
@@ -164,7 +159,7 @@ function say(target: string, msg: string) {
 function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, self: boolean) {
   if (self) { return; } // Ignore messages from the bot
 
-  const theBot = getOrCreateBot(target);
+  const theBot = botManager.getOrCreateBot(target);
 
   msg = msg.trim();
   const selected = interfaces.selectHandler(theBot, msg);
