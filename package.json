@@ -16,6 +16,7 @@
     "@types/tmi.js": "^1.8.6",
     "copyfiles": "^2.4.1",
     "tmi.js": "file:tmi.js",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "roulette-base-bot": "file:roulette-base-bot"
   }
 }
