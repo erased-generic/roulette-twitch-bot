@@ -5,6 +5,7 @@ import * as predictionBot from './bot/predictionbot';
 import * as duelBot from './bot/duelbot';
 import * as blackjackDuelImpl from './bot/twitchblackjackduelimpl';
 import * as anagramsDuelImpl from './bot/anagramsduelimpl';
+import * as wordleDuelImpl from './bot/wordleduelimpl';
 import * as funFactsBot from './bot/funfactsbot';
 import * as miscBot from './bot/miscbot';
 import * as botBase from './bot/botbase';
@@ -41,6 +42,10 @@ function createBot(
           bj: new blackjackDuelImpl.TwitchBlackJackDuelImpl(),
           anagrams: new anagramsDuelImpl.AnagramsDuelImpl(
             "data/public/anagrams.json"
+          ),
+          wordle: new wordleDuelImpl.WordleDuelImpl(
+            "data/public/wordle_targets.json",
+            "data/public/wordle_guesses.json"
           ),
         }),
       (ctx) => new funFactsBot.FunFactsBot(ctx, "data/public/funfacts.json"),
