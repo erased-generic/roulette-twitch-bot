@@ -182,7 +182,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   console.log(
     `${context.username}: ${msg} [${theBot.getContext().cmdMarker}${
       selected.key
-    } ${selected.args.join(" ")}]`
+    } ${selected.args.filter((x, i) => i > 0).join(" ")}]`
   );
 
   const userId = context['user-id'];
