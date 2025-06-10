@@ -179,7 +179,11 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
     return;
   }
 
-  console.log(`${context.username}: ${msg}`);
+  console.log(
+    `${context.username}: ${msg} [${theBot.getContext().cmdMarker}${
+      selected.key
+    } ${selected.args.join(" ")}]`
+  );
 
   const userId = context['user-id'];
   if (userId === undefined) {
@@ -189,7 +193,7 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
   let chatContext = {
     ...context,
     "user-id": userId,
-    "sent-at": parseInt(context['tmi-sent-ts'], 10),
+    "sent-at": parseInt(context['tmi-sent-ts']!, 10),
     mod: (context.mod === true) ||
           (context.badges?.broadcaster !== undefined)
   };
