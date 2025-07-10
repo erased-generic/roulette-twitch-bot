@@ -74,6 +74,7 @@ function createTmiClient() {
   // Register our event handlers (defined below)
   client.on('chat', onChatHandler);
   client.on('connected', onConnectedHandler);
+  client.on('disconnected', onDisconnectedHandler);
   return client;
 }
 
@@ -207,3 +208,17 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
 function onConnectedHandler(address: string, port: number) {
   console.log(`* Connected to ${address}:${port}`);
 }
+
+// Called on disconnect
+function onDisconnectedHandler() {
+  console.log('* Disconnected');
+}
+
+const doDisconnect = () => {
+  console.log('* Disconnecting...');
+  client.disconnect().then(() => process.exit(0));
+};
+
+process.on('SIGINT', doDisconnect);
+process.on('SIGTERM', doDisconnect);
+
