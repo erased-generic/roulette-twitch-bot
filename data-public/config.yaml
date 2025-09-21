@@ -8,7 +8,7 @@ defaultConfig: &defaultConfig
   botContext:
     name: BotBaseContext
     cmdMarker: "!"
-    botUsername: "erasedgeneric"
+    botUsername: *botUsername
     userData: *userData
 
 bots:
