@@ -1,31 +1,36 @@
 import { DuelBot } from "../../src/bot/duelbot";
-import { TwitchBlackJackDuelImpl } from "../../src/bot/twitchblackjackduelimpl";
+import {
+  TwitchBlackJackDuelImpl,
+  twitchBlackJackDuelImplConfig,
+} from "../../src/bot/twitchblackjackduelimpl";
 
-import {
-  ChatContext,
-} from "../../src/util/interfaces";
-import {
-  Deck,
-} from "../../src/util/blackjack";
+import { ChatContext } from "../../src/util/interfaces";
+import { Deck } from "../../src/util/blackjack";
 import {
   createTestBot,
-  createTestBotContext,
+  createTestBotConfig,
   instanceTestHandler,
   setBalanceNoReserved,
 } from "./utils";
 
 // test an actual duel
-const botContext = createTestBotContext();
-const userData = botContext.userData;
+const config = createTestBotConfig();
+const userData = config.botContext.userData;
 const myDeck = new Deck();
 const instance = createTestBot(
   [
-    (ctx) =>
-      new DuelBot(ctx, 0, {
-        bj: new TwitchBlackJackDuelImpl(() => myDeck),
-      }),
+    new DuelBot({
+      ...config,
+      playerShuffleChance: 0,
+      duelImpls: {
+        bj: new TwitchBlackJackDuelImpl({
+          ...twitchBlackJackDuelImplConfig(),
+          deckGenerator: () => myDeck,
+        }),
+      },
+    }),
   ],
-  botContext
+  config
 );
 
 const aChatContext = { username: "a", "user-id": "a", mod: false };

@@ -1,20 +1,10 @@
-import * as interfaces from './util/interfaces';
-import * as balanceBot from './bot/balancebot';
-import * as rouletteBot from './bot/roulettebot';
-import * as predictionBot from './bot/predictionbot';
-import * as duelBot from './bot/duelbot';
-import * as blackjackDuelImpl from './bot/twitchblackjackduelimpl';
-import * as anagramsDuelImpl from './bot/anagramsduelimpl';
-import * as wordleDuelImpl from './bot/wordleduelimpl';
-import * as funFactsBot from './bot/funfactsbot';
-import * as miscBot from './bot/miscbot';
-import * as botBase from './bot/botbase';
-import * as userDataModule from './util/userdata';
+import * as interfaces from "./util/interfaces";
+import * as botBase from "./bot/botbase";
+import * as fs from "fs";
+import tmi from "tmi.js";
 
-import * as fs from 'fs';
-import tmi from 'tmi.js';
+import './bot/twitch_all_bots';
 
-// Define configuration options
 interface AuthParams {
   username: string;
   channels: string[];
@@ -24,57 +14,31 @@ interface AuthParams {
   refresh_token: string;
   scope: string[];
 }
+
 const authPath = "data/private/auth.json";
-const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, 'utf8'));
+const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, "utf8"));
 
-function createBot(
-  channel: string,
-  userData: userDataModule.UserData<botBase.PerUserData>
-): interfaces.Bot {
-  const botContext = new botBase.BotBaseContext("!", auth.username, userData);
-  const theBot: interfaces.Bot = botBase.composeBotsWithUsernameUpdater(
-    [
-      (ctx) => new balanceBot.BalanceBot(ctx),
-      (ctx) => new rouletteBot.RouletteBot(ctx),
-      (ctx) => new predictionBot.PredictionBot(ctx, 100),
-      (ctx) =>
-        new duelBot.DuelBot(ctx, 0.5, {
-          bj: new blackjackDuelImpl.TwitchBlackJackDuelImpl(),
-          anagrams: new anagramsDuelImpl.AnagramsDuelImpl(
-            "data/public/anagrams.json"
-          ),
-          wordle: new wordleDuelImpl.WordleDuelImpl(
-            "data/public/wordle_targets.json",
-            "data/public/wordle_guesses.json"
-          ),
-        }),
-      (ctx) => new funFactsBot.FunFactsBot(ctx, "data/public/funfacts.json"),
-      (ctx) => new miscBot.MiscBot(ctx),
-    ],
-    botContext
-  );
-
-  return theBot;
-}
-
-const botManager = new botBase.BotManager(createBot, botBase.createFileUserData);
+const botManager = new botBase.BotManager(
+  botBase.createConfigurableBotFactory(auth.username, "data/public/config.yaml"),
+  botBase.createFileUserData
+);
 
 function createTmiClient() {
   const opts = {
     identity: {
       username: auth.username,
-      password: `oauth:${auth.access_token}`
+      password: `oauth:${auth.access_token}`,
     },
-    channels: auth.channels
+    channels: auth.channels,
   };
 
   // Create a client with our options
   const client = new tmi.Client(opts);
 
   // Register our event handlers (defined below)
-  client.on('chat', onChatHandler);
-  client.on('connected', onConnectedHandler);
-  client.on('disconnected', onDisconnectedHandler);
+  client.on("chat", onChatHandler);
+  client.on("connected", onConnectedHandler);
+  client.on("disconnected", onDisconnectedHandler);
   return client;
 }
 
@@ -85,48 +49,57 @@ interface RefreshResponse {
 
 // Connect to Twitch:
 let client = createTmiClient();
-client.connect()
-  .catch(async (reason) => {
-    if (reason == "Login authentication failed") {
-      console.log("Requesting token refresh...");
-      const body = new URLSearchParams({
-        "client_id": auth.client_id,
-        "client_secret": auth.client_secret,
-        "grant_type": "refresh_token",
-        "refresh_token": auth.refresh_token,
-      });
-      const response = await fetch("https://id.twitch.tv/oauth2/token", {
-        method: "POST",
-        body: body.toString(),
-        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }
-      });
 
-      if (!response.ok || response.body === null) {
-        console.error(`Token refresh failed: ${response.status}, ${response.statusText}`);
-        return;
-      }
-
-      const responseBody: RefreshResponse = await (response.json() as Promise<RefreshResponse>);
-      console.log("Refreshing tokens...")
-      auth.access_token = responseBody.access_token;
-      auth.refresh_token = responseBody.refresh_token;
-      fs.writeFileSync(authPath, JSON.stringify(auth), 'utf8');
-      console.log("Reconnecting...");
-      client = createTmiClient();
-      return client.connect();
-    } else {
-      console.error(`error: ${reason}`);
-    }
+async function refreshTokens() {
+  console.log("Requesting token refresh...");
+  const body = new URLSearchParams({
+    client_id: auth.client_id,
+    client_secret: auth.client_secret,
+    grant_type: "refresh_token",
+    refresh_token: auth.refresh_token,
   });
+  const response = await fetch("https://id.twitch.tv/oauth2/token", {
+    method: "POST",
+    body: body.toString(),
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    },
+  });
+
+  if (!response.ok || response.body === null) {
+    console.error(
+      `Token refresh failed: ${response.status}, ${response.statusText}`
+    );
+    return;
+  }
+
+  const responseBody: RefreshResponse =
+    await (response.json() as Promise<RefreshResponse>);
+  console.log("Refreshing tokens...");
+  auth.access_token = responseBody.access_token;
+  auth.refresh_token = responseBody.refresh_token;
+  fs.writeFileSync(authPath, JSON.stringify(auth), "utf8");
+  console.log("Reconnecting...");
+  client = createTmiClient();
+  return client.connect();
+}
+
+client.connect().catch(async (reason) => {
+  if (reason == "Login authentication failed") {
+    await refreshTokens();
+  } else {
+    console.error(`error: ${reason}`);
+  }
+});
 
 const MAX_MSG_LENGTH = 500;
 const ANY_MSG_COOLDOWN_MS = 3_000;
 const DUP_MSG_COOLDOWN_MS = 30_000;
 function say(target: string, msg: string) {
-  msg = msg.replace('\n', ' ');
+  msg = msg.replace("\n", " ");
   if (msg.length > MAX_MSG_LENGTH) {
     const message = msg;
-    let lastSpace = message.slice(0, MAX_MSG_LENGTH).lastIndexOf(' ');
+    let lastSpace = message.slice(0, MAX_MSG_LENGTH).lastIndexOf(" ");
     if (lastSpace === -1) {
       lastSpace = MAX_MSG_LENGTH;
     }
@@ -140,30 +113,38 @@ function say(target: string, msg: string) {
   if (msg.length === 0) {
     return;
   }
-  client.say(target, msg)
-    .catch((reason: Error) => {
-      console.log(`Error sending message "${msg}": ${reason.message}, retrying...`);
-      if (reason.message.includes("'msg_duplicate'")) {
-        setTimeout(() => {
-          console.log(`* re-say: ${msg}`);
-          client.say(target, msg).catch((reason: Error) => {
-            console.log(`Error re-sending message "${msg}": ${reason.message}`);
-          })
-        }, DUP_MSG_COOLDOWN_MS);
-      } else if (reason.message.includes("'msg_ratelimit'")) {
-        setTimeout(() => {
-          console.log(`* re-say: ${msg}`);
-          client.say(target, msg).catch((reason: Error) => {
-            console.log(`Error re-sending message "${msg}": ${reason.message}`);
-          })
-        }, ANY_MSG_COOLDOWN_MS);
-      }
-    });
+  client.say(target, msg).catch((reason: Error) => {
+    console.log(
+      `Error sending message "${msg}": ${reason.message}, retrying...`
+    );
+    if (reason.message.includes("'msg_duplicate'")) {
+      setTimeout(() => {
+        console.log(`* re-say: ${msg}`);
+        client.say(target, msg).catch((reason: Error) => {
+          console.log(`Error re-sending message "${msg}": ${reason.message}`);
+        });
+      }, DUP_MSG_COOLDOWN_MS);
+    } else if (reason.message.includes("'msg_ratelimit'")) {
+      setTimeout(() => {
+        console.log(`* re-say: ${msg}`);
+        client.say(target, msg).catch((reason: Error) => {
+          console.log(`Error re-sending message "${msg}": ${reason.message}`);
+        });
+      }, ANY_MSG_COOLDOWN_MS);
+    }
+  });
 }
 
 // Called every time a message comes in
-function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, self: boolean) {
-  if (self) { return; } // Ignore messages from the bot
+function onChatHandler(
+  target: string,
+  context: tmi.ChatUserstate,
+  msg: string,
+  self: boolean
+) {
+  if (self) {
+    return;
+  } // Ignore messages from the bot
 
   const theBot = botManager.getOrCreateBot(target);
 
@@ -186,19 +167,23 @@ function onChatHandler(target: string, context: tmi.ChatUserstate, msg: string, 
     } ${selected.args.filter((x, i) => i > 0).join(" ")}]`
   );
 
-  const userId = context['user-id'];
+  const userId = context["user-id"];
   if (userId === undefined) {
-    say(target, `Sorry, I don't know who you are, ${context['username']}!`);
+    say(target, `Sorry, I don't know who you are, ${context["username"]}!`);
     return;
   }
   let chatContext = {
     ...context,
     "user-id": userId,
-    "sent-at": parseInt(context['tmi-sent-ts']!, 10),
-    mod: (context.mod === true) ||
-          (context.badges?.broadcaster !== undefined)
+    "sent-at": parseInt(context["tmi-sent-ts"]!, 10),
+    mod: context.mod === true || context.badges?.broadcaster !== undefined,
   };
-  let response = interfaces.callHandler(theBot, selected.handler, chatContext, selected.args);
+  let response = interfaces.callHandler(
+    theBot,
+    selected.handler,
+    chatContext,
+    selected.args
+  );
   if (response !== undefined) {
     say(target, response);
   }
@@ -210,15 +195,19 @@ function onConnectedHandler(address: string, port: number) {
 }
 
 // Called on disconnect
-function onDisconnectedHandler() {
-  console.log('* Disconnected');
+async function onDisconnectedHandler(reason: string) {
+  console.log("* Disconnected");
+  if (reason == "Login authentication failed") {
+    await refreshTokens();
+  } else {
+    console.error(`error: ${reason}`);
+  }
 }
 
 const doDisconnect = () => {
-  console.log('* Disconnecting...');
+  console.log("* Disconnecting...");
   client.disconnect().then(() => process.exit(0));
 };
 
-process.on('SIGINT', doDisconnect);
-process.on('SIGTERM', doDisconnect);
-
+process.on("SIGINT", doDisconnect);
+process.on("SIGTERM", doDisconnect);

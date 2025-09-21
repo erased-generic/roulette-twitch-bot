@@ -1,11 +1,24 @@
 import * as blackjackModule from "../util/blackjack";
 import { DuelAccepted, DuelBot } from "./duelbot";
-import { BlackJackDuelImpl } from './blackjackduelimpl';
+import {
+  BlackJackDuelImpl,
+  blackJackDuelImplConfig,
+} from "./blackjackduelimpl";
+import {
+  ConfigName,
+  Configurable,
+} from "../util/interfaces";
 
-export { TwitchBlackJackDuelImpl };
+export { twitchBlackJackDuelImplConfig, TwitchBlackJackDuelImpl };
 
+function twitchBlackJackDuelImplConfig() {
+  return blackJackDuelImplConfig();
+}
+
+@ConfigName("TwitchBlackJackDuelImpl", twitchBlackJackDuelImplConfig)
 class TwitchBlackJackDuelImpl
   extends BlackJackDuelImpl
+  implements Configurable
 {
   override printDuelIntro(
     bot: DuelBot,
