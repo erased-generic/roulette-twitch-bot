@@ -15,7 +15,7 @@ import {
 
 // test an actual duel
 const config = createTestBotConfig();
-const userData = config.botContext.userData;
+const userData = config.userData;
 const myDeck = new Deck();
 const instance = createTestBot(
   [
