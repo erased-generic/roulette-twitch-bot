@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es2017",
@@ -8,11 +10,9 @@
     "sourceMap": true,
     "outDir": "dist",
     "rootDirs": [".", "roulette-base-bot"],
-    "rootDir": ".",
+    "rootDir": "."
   },
-  "references": [
-    { "path": "roulette-base-bot" }
-  ],
+  "references": [{ "path": "roulette-base-bot" }],
   "lib": ["ES2017,DOM"],
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

@@ -1,15 +1,12 @@
+export { twitchBlackJackDuelImplConfig, TwitchBlackJackDuelImpl };
+
 import * as blackjackModule from "../util/blackjack";
 import { DuelAccepted, DuelBot } from "./duelbot";
 import {
   BlackJackDuelImpl,
   blackJackDuelImplConfig,
 } from "./blackjackduelimpl";
-import {
-  ConfigName,
-  Configurable,
-} from "../util/interfaces";
-
-export { twitchBlackJackDuelImplConfig, TwitchBlackJackDuelImpl };
+import { ConfigName, Configurable, HandlerContext } from "../util/interfaces";
 
 function twitchBlackJackDuelImplConfig() {
   return blackJackDuelImplConfig();
@@ -22,6 +19,7 @@ class TwitchBlackJackDuelImpl
 {
   override printDuelIntro(
     bot: DuelBot,
+    context: HandlerContext,
     duel: DuelAccepted<blackjackModule.BlackJack>
   ): string {
     return (
