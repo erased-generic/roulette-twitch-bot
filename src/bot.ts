@@ -3,7 +3,7 @@ import * as botBase from "./bot/botbase";
 import * as fs from "fs";
 import tmi from "tmi.js";
 
-import './bot/twitch_all_bots';
+import "./bot/twitch_all_bots";
 
 interface AuthParams {
   username: string;
@@ -19,7 +19,10 @@ const authPath = "data/private/auth.json";
 const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, "utf8"));
 
 const botManager = new botBase.BotManager(
-  botBase.createConfigurableBotFactory(auth.username, "data/public/config.yaml"),
+  botBase.createConfigurableBotFactory(
+    auth.username,
+    "data/public/config.yaml"
+  ),
   botBase.createFileUserData
 );
 
