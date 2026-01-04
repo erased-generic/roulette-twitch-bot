@@ -39,3 +39,6 @@ bots:
     filePath: "data/public/funfacts.json"
   - name: MiscBot
     <<: *defaultConfig
+  - name: FrameBot
+    <<: *defaultConfig
+    filePath: "data/public/frames.json"

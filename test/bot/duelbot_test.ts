@@ -4,7 +4,11 @@ import {
   twitchBlackJackDuelImplConfig,
 } from "../../src/bot/twitchblackjackduelimpl";
 
-import { ChatContext } from "../../src/util/interfaces";
+import {
+  applySchema,
+  ChatContext,
+  defaultValue,
+} from "../../src/util/interfaces";
 import { Deck } from "../../src/util/blackjack";
 import {
   createTestBot,
@@ -24,7 +28,7 @@ const instance = createTestBot(
       playerShuffleChance: 0,
       duelImpls: {
         bj: new TwitchBlackJackDuelImpl({
-          ...twitchBlackJackDuelImplConfig(),
+          ...applySchema({}, twitchBlackJackDuelImplConfig()),
           deckGenerator: () => myDeck,
         }),
       },
