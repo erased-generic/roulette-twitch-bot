@@ -88,11 +88,8 @@ async function refreshTokens() {
 }
 
 client.connect().catch(async (reason) => {
-  if (reason == "Login authentication failed") {
-    await refreshTokens();
-  } else {
-    console.error(`error: ${reason}`);
-  }
+  // Disconnect handler will refresh tokens if necessary
+  console.error(`error: ${reason}`);
 });
 
 const MAX_MSG_LENGTH = 500;
