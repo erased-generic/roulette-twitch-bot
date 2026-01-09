@@ -18,6 +18,7 @@ interface AuthParams {
 const authPath = "data/private/auth.json";
 const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, "utf8"));
 
+// TODO: add smoke test with this bot
 const botManager = new botBase.BotManager(
   botBase.createConfigurableBotFactory(
     auth.username,
