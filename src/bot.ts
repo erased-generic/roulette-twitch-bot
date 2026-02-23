@@ -18,13 +18,12 @@ interface AuthParams {
 const authPath = "data/private/auth.json";
 const auth: AuthParams = JSON.parse(fs.readFileSync(authPath, "utf8"));
 
-// TODO: add smoke test with this bot
 const botManager = new botBase.BotManager(
   botBase.createConfigurableBotFactory(
     auth.username,
-    "data/public/config.yaml"
+    "data/public/config.yaml",
   ),
-  botBase.createFileUserData
+  botBase.createFileUserData,
 );
 
 function createTmiClient() {
@@ -72,7 +71,7 @@ async function refreshTokens() {
 
   if (!response.ok || response.body === null) {
     console.error(
-      `Token refresh failed: ${response.status}, ${response.statusText}`
+      `Token refresh failed: ${response.status}, ${response.statusText}`,
     );
     return;
   }
@@ -116,7 +115,7 @@ function say(target: string, msg: string) {
   }
   client.say(target, msg).catch((reason: Error) => {
     console.log(
-      `Error sending message "${msg}": ${reason.message}, retrying...`
+      `Error sending message "${msg}": ${reason.message}, retrying...`,
     );
     if (reason.message.includes("'msg_duplicate'")) {
       setTimeout(() => {
@@ -141,7 +140,7 @@ function onChatHandler(
   target: string,
   context: tmi.ChatUserstate,
   msg: string,
-  self: boolean
+  self: boolean,
 ) {
   if (self) {
     return;
@@ -165,7 +164,7 @@ function onChatHandler(
   console.log(
     `${context.username}: ${msg} [${theBot.getContext().cmdMarker}${
       selected.key
-    } ${selected.args.filter((x, i) => i > 0).join(" ")}]`
+    } ${selected.args.filter((x, i) => i > 0).join(" ")}]`,
   );
 
   const userId = context["user-id"];
@@ -183,7 +182,7 @@ function onChatHandler(
     theBot,
     selected.handler,
     chatContext,
-    selected.args
+    selected.args,
   );
   if (response !== undefined) {
     say(target, response);
